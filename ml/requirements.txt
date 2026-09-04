@@ -1,0 +1,14 @@
+pandas
+geopandas
+rasterio
+shapely
+pyproj
+geopy
+requests
+pyrosm
+scikit-learn
+xgboost
+lightgbm
+joblib
+matplotlib
+seaborn

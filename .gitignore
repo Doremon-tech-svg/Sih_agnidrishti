@@ -1,0 +1,43 @@
+# Large OSM datasets
+data/raw/osm/*.osm.pbf
+
+# Large raster datasets
+data/raw/**/*.tif
+
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.env
+backend/venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+data/raw/osm/*.osm.pbf
+data/raw/**/*.tif
+data/processed/
+
+# ML artifacts
+ml/models/*.joblib
+ml/output/*.parquet
+ml/__pycache__/
+
+data/raw/firms/*.csv
+data/raw/firms/*.parquet
+data/raw/landcover/*.tif
+data/raw/osm/*.pbf
+data/raw/osm/*.zip
+data/raw/worldpop/*.tif
+data/raw/powerplants/*.csv
+data/raw/nightlife/*.xlsx
+ml/output/*.parquet
+ml/models/artifacts/*
+ml/output/last_run.json
+backend/venv/
+node_modules/
+frontend/dist/
+.env
