@@ -1,0 +1,41 @@
+{
+  "feature_cols": [
+    "frp",
+    "brightness_ti4",
+    "brightness_ti5",
+    "scan",
+    "track",
+    "frp_per_scan_area",
+    "hour_utc",
+    "month",
+    "day_of_year",
+    "is_night",
+    "conf_low",
+    "conf_nominal",
+    "conf_high",
+    "lc_industrial",
+    "lc_cropland",
+    "lc_forest",
+    "lc_urban",
+    "cluster_id",
+    "dist_to_cluster_km",
+    "frp_cell_mean",
+    "frp_cell_std",
+    "frp_cell_count",
+    "frp_zscore"
+  ],
+  "class_names": {
+    "0": "False Positive",
+    "1": "Gas Flare",
+    "2": "Industrial Thermal Source",
+    "3": "Industrial Fire / Accident",
+    "4": "Agricultural Burning",
+    "5": "Wildfire / Forest Fire",
+    "6": "Mining Thermal Activity"
+  },
+  "xgb_accuracy": 0.9982,
+  "lgb_accuracy": 1.0,
+  "ensemble_accuracy": 1.0,
+  "n_train": 4470,
+  "n_test": 1118
+}
