@@ -431,6 +431,71 @@ export default function OrbitalGlobe({
     updateHotspots(hotspots);
   }, [hotspots]);
 
+  // ─── React to region / coords changes — rotate globe to target ────────
+  useEffect(() => {
+    let lat = null, lon = null, zoom = null;
+    if (targetCoords && typeof targetCoords.lat === "number") {
+      lat = targetCoords.lat;
+      lon = targetCoords.lon;
+      zoom = targetCoords.zoom || null;
+    } else if (selectedRegion && REGION_COORDINATES[selectedRegion]) {
+      const rc = REGION_COORDINATES[selectedRegion];
+      lat = rc.lat;
+      lon = rc.lon;
+      zoom = rc.zoom || null;
+    }
+
+    if (lat !== null && lon !== null) {
+      // Rotate globe to face the region
+      const rot = latLonToTargetRotation(lat, lon);
+      targetRotationRef.current = { x: rot.x, y: rot.y };
+
+      // Update selection highlight direction
+      const dir = latLonToVector3(lat, lon, 1).normalize();
+      selectedDirTargetRef.current.copy(dir);
+
+      // Fire a new ripple from the target
+      rippleOriginDirRef.current.copy(dir);
+      rippleOriginSetAtRef.current = performance.now() / 1000;
+
+      // Move beacon
+      if (targetBeaconRef.current) {
+        const beaconPos = latLonToVector3(lat, lon, 101.5);
+        targetBeaconRef.current.position.copy(beaconPos);
+        targetBeaconRef.current.visible = true;
+      }
+
+      // Set zoom based on region or prop
+      if (zoom) {
+        targetZoomRef.current = zoom;
+      } else if (zoomLevel !== 0) {
+        // Map zoomLevel 1-3 to camera distances
+        const zoomMap = { '-2': 320, '-1': 300, 0: 280, 1: 230, 2: 195, 3: 170 };
+        targetZoomRef.current = zoomMap[zoomLevel] || 280;
+      }
+
+      // Update selection active uniform
+      if (uniformsRef.current) {
+        uniformsRef.current.uSelectionActive.value = 1;
+      }
+    } else {
+      // No region selected — reset
+      if (targetBeaconRef.current) {
+        targetBeaconRef.current.visible = false;
+      }
+      // Reset zoom
+      targetZoomRef.current = 280;
+      if (uniformsRef.current) {
+        uniformsRef.current.uSelectionActive.value = 0;
+      }
+    }
+  }, [selectedRegion, targetCoords, zoomLevel]);
+
+  // ─── React to card open/close — shift globe position ──────────────────
+  useEffect(() => {
+    targetPositionXRef.current = isCardOpen ? -22 : 0;
+  }, [isCardOpen]);
+
   // ─── Main scene setup ──────────────────────────────────────────────────
   useEffect(() => {
     const container = mountRef.current;
