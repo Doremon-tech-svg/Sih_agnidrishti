@@ -97,6 +97,21 @@ def test_multi_city_surat_generation():
         generator.close()
 
 
+def test_generation_can_skip_osm_for_large_batches():
+    print("\n--- 4. Testing OSM-free Batch Generation Mode ---")
+    generator = UnifiedDatasetGenerator(base_dir=BASE_DIR, use_osm=False)
+
+    try:
+        result = generator.process_city("bharuch", limit=3, verbose=False)
+        df = pd.read_csv(result["export_paths"]["csv"])
+        assert len(df) == 3
+        assert "nearest_road_distance_m" in df.columns
+        assert not df["nearest_road_distance_m"].isnull().any()
+        print("[PASS] OSM-free batch mode produced valid feature defaults.")
+    finally:
+        generator.close()
+
+
 def main():
     print("==================================================")
     print("AGNIDRISHTI - PHASE 9 UNIFIED DATASET TEST SUITE")
@@ -104,6 +119,7 @@ def main():
     test_city_configs()
     test_jamnagar_batch_generation()
     test_multi_city_surat_generation()
+    test_generation_can_skip_osm_for_large_batches()
     print("\n==================================================")
     print("ALL PHASE 9 DATASET TESTS PASSED SUCCESSFULLY!")
     print("==================================================")

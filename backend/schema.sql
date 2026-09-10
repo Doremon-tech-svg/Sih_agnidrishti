@@ -4,13 +4,14 @@ CREATE TABLE facilities (
   id SERIAL PRIMARY KEY,
   name TEXT,
   type TEXT,               -- refinery, power_plant, mine, lng, etc
-  osm_id TEXT UNIQUE,
+  osm_id TEXT,
   geom GEOMETRY(Polygon, 4326),
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE TABLE hotspots (
   id SERIAL PRIMARY KEY,
+  source_event_id TEXT UNIQUE,
   lat DOUBLE PRECISION NOT NULL,
   lon DOUBLE PRECISION NOT NULL,
   geom GEOMETRY(Point, 4326),
@@ -49,3 +50,5 @@ CREATE TABLE alerts (
 
 CREATE INDEX hotspots_geom_idx ON hotspots USING GIST (geom);
 CREATE INDEX facilities_geom_idx ON facilities USING GIST (geom);
+CREATE INDEX hotspots_acq_date_idx ON hotspots (acq_date DESC);
+CREATE INDEX hotspots_classification_idx ON hotspots (classification);
