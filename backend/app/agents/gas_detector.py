@@ -31,7 +31,7 @@ class GasDetectorAnalyzer:
             "description": "Biomass burning signature (high NO2, low SO2)"
         },
         2: {  # Wildfire / Vegetation Fuel Fire
-            "so2_range": (0, 200),
+            "so2_range": (50, 200),
             "no2_range": (100, 400),
             "confidence_boost": +0.25,
             "description": "Pure combustion signature (high NO2, minimal SO2)"
@@ -263,6 +263,19 @@ class GasDetectorAnalyzer:
         if so2_ppb > 100 and no2_ppb > 100:
             scaled_boost *= 1.2
 
+        # If gas evidence strongly contradicts for high-threat classes, apply penalties
+        signature = self.GAS_THREAT_SIGNATURES[threat_class]
+        so2_min, so2_max = signature["so2_range"]
+        no2_min, no2_max = signature["no2_range"]
+
+        # Penalty: no gas elevation for high threat classes
+        if threat_class in [2, 3] and so2_ppb < so2_min and no2_ppb < no2_min:
+            scaled_boost += self.PENALTIES["no_gas_elevation"]
+
+        # If gas match is very low, consider it a contradiction and apply stronger penalty
+        if gas_match < 0.35:
+            scaled_boost += self.PENALTIES["contradicts_class"]
+
         # Refined probability using weighted average
         # More weight to ML if gas data is inconclusive (low gas_match)
         ml_weight = 1.0 - (gas_match * 0.5)  # Gas evidence reduces ML reliance
@@ -271,11 +284,11 @@ class GasDetectorAnalyzer:
             gas_match * (1 - ml_weight)
         )
 
-        # Add scaled boost
+        # Add scaled boost (which may be negative)
         refined_prob = np.clip(refined_prob + scaled_boost, 0.0, 1.0)
         confidence_delta = refined_prob - ml_probability
 
-        # Generate recommendation
+        # Generate recommendation text
         if gas_match > 0.80 and confidence_delta > 0.15:
             recommendation = f"Classification SOLIDIFIED - Gas signature strongly confirms {self.GAS_THREAT_SIGNATURES[threat_class]['description'].lower()}"
         elif gas_match > 0.60:
@@ -359,6 +372,7 @@ class GasDetectorAnalyzer:
             "recommendation": "Gas data unavailable - proceeding with ML classification only",
             "agent2_status": "NO_DATA",
             "flags": ["ℹ️ Gas concentration data could not be retrieved"],
+            "original_ml_probability": round(ml_classification.get("probability", 0.0), 3),
             "threat_class_description": self.GAS_THREAT_SIGNATURES[
                 ml_classification["threat_class"]
             ]["description"]

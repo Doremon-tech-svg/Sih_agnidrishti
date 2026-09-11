@@ -24,10 +24,16 @@ const TEST_ACCOUNTS = [
     { email: 'viewer@agnidrishti.gov.in', password: 'Viewer@2026', role: 'VIEWER', color: '#72c7b5' },
 ];
 
+const AVAILABLE_LOCATIONS = [
+    { id: 'FAC-GUJ-01', name: 'Gujarat HQ (Gandhinagar)', lat: 23.2156, lon: 72.6369, district: 'Gandhinagar', state: 'Gujarat' },
+    { id: 'FAC-SIM-02', name: 'Simlipal Control Room', lat: 21.8483, lon: 86.4385, district: 'Mayurbhanj', state: 'Odisha' },
+    { id: 'FAC-BAN-03', name: 'Bandipur Field Station', lat: 11.6664, lon: 76.6288, district: 'Chamarajanagar', state: 'Karnataka' },
+];
+
 export default function LoginPage({ onAuthSuccess, onRegistrationSuccess }) {
     const [mode, setMode] = useState('login');
     const [contentMode, setContentMode] = useState('login');
-    const [form, setForm] = useState({ email: '', password: '', full_name: '', designation: '', department: '' });
+    const [form, setForm] = useState({ email: '', password: '', full_name: '', designation: '', department: '', work_location: '' });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
@@ -63,16 +69,23 @@ export default function LoginPage({ onAuthSuccess, onRegistrationSuccess }) {
         setError('');
         setSuccess('');
         setLoading(true);
+
+        const selectedLoc = AVAILABLE_LOCATIONS.find(loc => loc.id === form.work_location);
+        const work_lat = selectedLoc ? selectedLoc.lat : null;
+        const work_lon = selectedLoc ? selectedLoc.lon : null;
+        const facility_id = selectedLoc ? selectedLoc.id : null;
+
         try {
             const data = await register({
                 email: form.email, password: form.password, full_name: form.full_name,
                 designation: form.designation, department: form.department,
+                work_lat, work_lon, facility_id
             });
             if (onRegistrationSuccess) {
                 onRegistrationSuccess(data);
             } else {
                 setSuccess(data.message || 'Registration submitted. Await administrator approval.');
-                setForm({ email: '', password: '', full_name: '', designation: '', department: '' });
+                setForm({ email: '', password: '', full_name: '', designation: '', department: '', work_location: '' });
             }
         } catch (requestError) {
             setError(requestError.message);
@@ -158,6 +171,13 @@ export default function LoginPage({ onAuthSuccess, onRegistrationSuccess }) {
                                 <select id="department" value={form.department} onChange={event => set('department', event.target.value)} required>
                                     <option value="">Select department</option>
                                     {DEPARTMENTS.map(department => <option key={department} value={department}>{department}</option>)}
+                                </select>
+                            </div>
+                            <div className="login-field register-only">
+                                <label htmlFor="work_location">Workplace Location</label>
+                                <select id="work_location" value={form.work_location} onChange={event => set('work_location', event.target.value)} required>
+                                    <option value="">Select workplace location</option>
+                                    {AVAILABLE_LOCATIONS.map(loc => <option key={loc.id} value={loc.id}>{loc.name}</option>)}
                                 </select>
                             </div>
                             <div className="login-notice register-only">Your request will be reviewed by an administrator before access is granted.</div>

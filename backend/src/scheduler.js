@@ -35,5 +35,6 @@ function runPipeline() {
     });
 }
 
-cron.schedule('0 */6 * * *', runPipeline);
-console.log('Scheduler active: fetch -> link -> anomaly -> incidents (every 6h)');
+// Run every 12 hours (user requested)
+cron.schedule('0 */12 * * *', runPipeline);
+console.log('Scheduler active: fetch -> link -> anomaly -> incidents (every 12h)');
