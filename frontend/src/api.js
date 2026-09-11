@@ -1,4 +1,6 @@
-const BASE = import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? 'http://localhost:4000/api' : 'https://sih-agnidrishti-express.onrender.com/api');
+let baseEnv = import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? 'http://localhost:4000/api' : 'https://sih-agnidrishti-express.onrender.com/api');
+if (baseEnv.endsWith('/')) baseEnv = baseEnv.slice(0, -1);
+const BASE = baseEnv.endsWith('/api') ? baseEnv : `${baseEnv}/api`;
 
 // ── Auth token helpers ─────────────────────────────────────────────────────
 export const getToken  = ()    => localStorage.getItem('ag_token');
