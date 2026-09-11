@@ -489,7 +489,7 @@
 
 .globe-filter-row {
   position: absolute;
-  top: clamp(490px, 66vh, 560px);
+  bottom: 120px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 120;

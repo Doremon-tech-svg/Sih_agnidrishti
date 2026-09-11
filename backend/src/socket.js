@@ -9,9 +9,10 @@ import { Server } from 'socket.io';
 let io;
 
 export function initializeSocket(server) {
+    const frontendUrl = process.env.FRONTEND_URL;
     io = new Server(server, {
         cors: {
-            origin: process.env.FRONTEND_URL || '*',
+            origin: frontendUrl ? [frontendUrl, frontendUrl.replace(/\/$/, '')] : '*',
             methods: ['GET', 'POST']
         }
     });

@@ -63,17 +63,6 @@ CREATE INDEX hotspots_acq_date_idx ON hotspots (acq_date DESC);
 CREATE INDEX hotspots_classification_idx ON hotspots (classification);
 
 -- ===================================
--- Source: backend/migrations/001_osm_id_unique.sql
--- ===================================
-
--- Run this once against the running DB to apply the UNIQUE constraint
--- that was added to schema.sql for new deployments.
--- Safe to run even if there are no existing rows.
-
-ALTER TABLE facilities ADD CONSTRAINT facilities_osm_id_unique UNIQUE (osm_id);
-
-
--- ===================================
 -- Source: backend/migrations/002_auth.sql
 -- ===================================
 

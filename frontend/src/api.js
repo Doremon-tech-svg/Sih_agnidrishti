@@ -1,14 +1,6 @@
-// Use environment variable or detect based on current protocol
-const getDefaultBase = () => {
-  // In production, use the same origin or HTTPS
-  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
-    // If we're on HTTPS, use relative URL or same origin
-    return `${window.location.origin}/api`;
-  }
-  return 'http://localhost:4000/api';
-};
-
-const BASE = import.meta.env.VITE_API_BASE ?? getDefaultBase();
+let baseEnv = import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? 'http://localhost:4000/api' : 'https://sih-agnidrishti-express.onrender.com/api');
+if (baseEnv.endsWith('/')) baseEnv = baseEnv.slice(0, -1);
+const BASE = baseEnv.endsWith('/api') ? baseEnv : `${baseEnv}/api`;
 
 // ── Auth token helpers ─────────────────────────────────────────────────────
 export const getToken  = ()    => localStorage.getItem('ag_token');
