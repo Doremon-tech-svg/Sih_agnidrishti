@@ -10,9 +10,9 @@
   position: fixed;
   z-index: -2;
   inset: 0;
-  background: url('/assets/agnidrishti-earth-reference.png') center / cover no-repeat;
-  filter: blur(9px) brightness(.5) saturate(.45);
-  opacity: .9;
+  background: url('/assets/Dashboard_bg.jpg') center / cover no-repeat;
+  filter: brightness(0.4);
+  opacity: 1;
   transform: scale(1.035);
   pointer-events: none;
 }
@@ -128,10 +128,13 @@
 
 .od-panel,
 .od-hero {
-  border-color: rgba(255, 255, 255, .18);
-  background: linear-gradient(135deg, rgba(255, 255, 255, .1), rgba(15, 16, 18, .34));
-  backdrop-filter: blur(22px) saturate(105%);
-  -webkit-backdrop-filter: blur(22px) saturate(105%);
+  border-color: rgba(255, 255, 255, .15);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.37),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
 }
 
 @media (max-width: 900px) {

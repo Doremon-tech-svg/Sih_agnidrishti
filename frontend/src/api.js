@@ -1,4 +1,14 @@
-const BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:4000/api';
+// Use environment variable or detect based on current protocol
+const getDefaultBase = () => {
+  // In production, use the same origin or HTTPS
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    // If we're on HTTPS, use relative URL or same origin
+    return `${window.location.origin}/api`;
+  }
+  return 'http://localhost:4000/api';
+};
+
+const BASE = import.meta.env.VITE_API_BASE ?? getDefaultBase();
 
 // ── Auth token helpers ─────────────────────────────────────────────────────
 export const getToken  = ()    => localStorage.getItem('ag_token');

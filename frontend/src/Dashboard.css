@@ -904,3 +904,55 @@
     display: none;
   }
 }
+
+/* -------------------------------- Pixel Info ------------------------------- */
+
+.od-pixel-info {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(70, 217, 255, 0.3);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 20px rgba(70, 217, 255, 0.2), inset 0 1px 0 0 rgba(70, 217, 255, 0.1);
+  animation: odPixelSlideIn 0.3s ease-out;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes odPixelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.od-pixel-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #46d9ff;
+  margin-bottom: 8px;
+}
+
+.od-pixel-coords {
+  font-size: 13px;
+  font-weight: 500;
+  color: #dbeafe;
+  margin-bottom: 4px;
+  font-family: 'Courier New', monospace;
+}
+
+.od-pixel-status {
+  font-size: 11px;
+  color: #9b7cff;
+  font-weight: 500;
+}
