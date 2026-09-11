@@ -2,7 +2,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, GeoJSON } from 'react-lea
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { evaluateIncident, getHotspots, getFacilities } from './api.js';
 import FacilityPanel from './FacilityPanel.jsx';
-//import TimeSlider from './TimeSlider.jsx';
+import TimeSlider from './TimeSlider.jsx';
 import Legend from './Legend.jsx';
 import Scene3D from './Scene3D.jsx';
 import ClassFilter from './ClassFilter.jsx';
@@ -340,8 +340,8 @@ export default function MapView({ onHotspotCount }) {
                 </button>
             </div>
 
-            {/* Time slider disabled — component not yet implemented */}
-            {/* <TimeSlider hotspots={hotspots} onFilteredChange={handleTimeFiltered} /> */}
+            {/* Time slider is positioned absolute at the bottom in the timeslider-bar */}
+            <TimeSlider hotspots={hotspots} onFilteredChange={handleTimeFiltered} />
 
             <FacilityPanel facilityId={selectedFacility} onClose={() => setSelectedFacility(null)} />
 

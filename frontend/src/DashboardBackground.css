@@ -1,23 +1,158 @@
 /* Landing navbar transfer + full-page Earth background for the original dashboard */
-.od-dashboard { background: transparent !important; position: relative; isolation: isolate; }
-.od-dashboard::before { content: ''; position: fixed; z-index: -2; inset: 0; background: url('/assets/agnidrishti-earth-reference.png') center / cover no-repeat; filter: blur(9px) brightness(.5) saturate(.45); opacity: .9; transform: scale(1.035); pointer-events: none; }
-.od-dashboard::after { content: ''; position: fixed; z-index: -1; inset: 0; background: linear-gradient(180deg, rgba(8,9,10,.48), rgba(8,9,10,.76)); pointer-events: none; }
-.od-dashboard-navbar { max-width: 1560px; margin: 0 auto 14px; padding: 12px 18px; border: 1px solid rgba(255,255,255,.2); border-radius: 14px; background: linear-gradient(135deg, rgba(255,255,255,.12), rgba(14,15,17,.4)); box-shadow: inset 0 1px rgba(255,255,255,.12), 0 18px 45px rgba(0,0,0,.28); backdrop-filter: blur(22px) saturate(105%); -webkit-backdrop-filter: blur(22px) saturate(105%); }
-.od-dashboard-navbar .header-left,.od-dashboard-navbar .header-right { display:flex; align-items:center; gap:14px; }
-.od-dashboard-navbar .header-center-tabs { display:flex; align-items:center; justify-content:center; gap:22px; }
-.od-dashboard-navbar .nav-tab-btn { position:relative; border:0; background:transparent; color:#b7c1c9; padding:10px 3px; cursor:pointer; font:inherit; font-size:11px; }
-.od-dashboard-navbar .nav-tab-btn.is-active { color:#fff; }
-.od-dashboard-navbar .active-indicator-bar { position:absolute; left:0; right:0; bottom:0; height:2px; background:#f2f4f5; border-radius:3px; }
-.od-dashboard-navbar .brand-google { color:#f4f4f4; font-weight:800; font-size:16px; letter-spacing:-.04em; }
-.od-dashboard-navbar .brand-research { color:#c3c8cc; font-size:16px; font-weight:500; letter-spacing:-.04em; }
-.od-dashboard-navbar .brand-sep { color:#687078; margin:0 2px; }
-.od-dashboard-navbar .brand-project { color:#aab2b8; font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
-.od-dashboard-navbar .explorer-breadcrumbs { display:flex; gap:8px; align-items:center; color:#8e989f; font-size:10px; }
-.od-dashboard-navbar .breadcrumb-item.active { color:#f0f2f3; }
-.od-dashboard-run { border-radius:8px; padding:10px 14px; border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.82); color:#17191b; font-size:10px; font-weight:800; cursor:pointer; }
-.od-panel,.od-hero { border-color:rgba(255,255,255,.18); background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(15,16,18,.34)); backdrop-filter:blur(22px) saturate(105%); -webkit-backdrop-filter:blur(22px) saturate(105%); }
-@media (max-width: 900px) { .od-dashboard-navbar .header-center-tabs { display:none; } .od-dashboard-navbar .brand-project { display:none; } }
-@media (max-width: 560px) { .od-dashboard-navbar .explorer-breadcrumbs { display:none; } .od-dashboard-navbar .header-left { flex:1; } }
+.od-dashboard {
+  background: transparent !important;
+  position: relative;
+  isolation: isolate;
+}
+
+.od-dashboard::before {
+  content: '';
+  position: fixed;
+  z-index: -2;
+  inset: 0;
+  background: url('/assets/agnidrishti-earth-reference.png') center / cover no-repeat;
+  filter: blur(9px) brightness(.5) saturate(.45);
+  opacity: .9;
+  transform: scale(1.035);
+  pointer-events: none;
+}
+
+.od-dashboard::after {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 9, 10, .48), rgba(8, 9, 10, .76));
+  pointer-events: none;
+}
+
+.od-dashboard-navbar {
+  max-width: 1560px;
+  margin: 0 auto 14px;
+  padding: 12px 18px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .12), rgba(14, 15, 17, .4));
+  box-shadow: inset 0 1px rgba(255, 255, 255, .12), 0 18px 45px rgba(0, 0, 0, .28);
+  backdrop-filter: blur(22px) saturate(105%);
+  -webkit-backdrop-filter: blur(22px) saturate(105%);
+}
+
+.od-dashboard-navbar .header-left,
+.od-dashboard-navbar .header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.od-dashboard-navbar .header-center-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.od-dashboard-navbar .nav-tab-btn {
+  position: relative;
+  border: 0;
+  background: transparent;
+  color: #b7c1c9;
+  padding: 10px 3px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+
+.od-dashboard-navbar .nav-tab-btn.is-active {
+  color: #fff;
+}
+
+.od-dashboard-navbar .active-indicator-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: #f2f4f5;
+  border-radius: 3px;
+}
+
+.od-dashboard-navbar .brand-google {
+  color: #f4f4f4;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -.04em;
+}
+
+.od-dashboard-navbar .brand-research {
+  color: #c3c8cc;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -.04em;
+}
+
+.od-dashboard-navbar .brand-sep {
+  color: #687078;
+  margin: 0 2px;
+}
+
+.od-dashboard-navbar .brand-project {
+  color: #aab2b8;
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.od-dashboard-navbar .explorer-breadcrumbs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: #8e989f;
+  font-size: 10px;
+}
+
+.od-dashboard-navbar .breadcrumb-item.active {
+  color: #f0f2f3;
+}
+
+.od-dashboard-run {
+  border-radius: 8px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, .3);
+  background: rgba(255, 255, 255, .82);
+  color: #17191b;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.od-panel,
+.od-hero {
+  border-color: rgba(255, 255, 255, .18);
+  background: linear-gradient(135deg, rgba(255, 255, 255, .1), rgba(15, 16, 18, .34));
+  backdrop-filter: blur(22px) saturate(105%);
+  -webkit-backdrop-filter: blur(22px) saturate(105%);
+}
+
+@media (max-width: 900px) {
+  .od-dashboard-navbar .header-center-tabs {
+    display: none;
+  }
+
+  .od-dashboard-navbar .brand-project {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .od-dashboard-navbar .explorer-breadcrumbs {
+    display: none;
+  }
+
+  .od-dashboard-navbar .header-left {
+    flex: 1;
+  }
+}
 
 /* Landing navbar finish: neutral frosted glass, no warm/orange accents */
 .od-dashboard-navbar {
@@ -26,31 +161,112 @@
   align-items: center;
   gap: 24px;
   color: #edf0f2 !important;
-  border: 1px solid rgba(255,255,255,.22) !important;
-  background: linear-gradient(135deg, rgba(255,255,255,.13), rgba(9,10,12,.42)) !important;
-  box-shadow: inset 0 1px rgba(255,255,255,.15), 0 18px 48px rgba(0,0,0,.3) !important;
+  border: 1px solid rgba(255, 255, 255, .22) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .13), rgba(9, 10, 12, .42)) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .15), 0 18px 48px rgba(0, 0, 0, .3) !important;
   backdrop-filter: blur(26px) saturate(100%) !important;
   -webkit-backdrop-filter: blur(26px) saturate(100%) !important;
 }
-.od-dashboard-navbar .header-left { min-width: 0; }
-.od-dashboard-navbar .header-right { justify-content: flex-end; min-width: 0; }
+
+.od-dashboard-navbar .header-left {
+  min-width: 0;
+}
+
+.od-dashboard-navbar .header-right {
+  justify-content: flex-end;
+  min-width: 0;
+}
+
 .od-dashboard-navbar .brand-google,
 .od-dashboard-navbar .brand-research,
 .od-dashboard-navbar .brand-project,
 .od-dashboard-navbar .breadcrumb-item,
-.od-dashboard-navbar .breadcrumb-arrow { color: #e4e7e9 !important; }
+.od-dashboard-navbar .breadcrumb-arrow {
+  color: #e4e7e9 !important;
+}
+
 .od-dashboard-navbar .brand-project,
-.od-dashboard-navbar .breadcrumb-item { opacity: .64; }
-.od-dashboard-navbar .nav-tab-btn { color: rgba(235,238,240,.64) !important; }
+.od-dashboard-navbar .breadcrumb-item {
+  opacity: .64;
+}
+
+.od-dashboard-navbar .nav-tab-btn {
+  color: rgba(235, 238, 240, .64) !important;
+}
+
 .od-dashboard-navbar .nav-tab-btn:hover,
-.od-dashboard-navbar .nav-tab-btn.is-active { color: #fff !important; }
-.od-dashboard-navbar .active-indicator-bar { background: #fff !important; box-shadow: 0 0 10px rgba(255,255,255,.4); }
-.od-dashboard-navbar .od-status-pill { border-color: rgba(255,255,255,.18) !important; background: rgba(255,255,255,.07) !important; color: #e6e9eb !important; }
-.od-dashboard-navbar .od-status-dot { background: #dfe3e5 !important; box-shadow: 0 0 8px rgba(255,255,255,.8) !important; }
-.od-dashboard-navbar .od-status-pill em { color: rgba(235,238,240,.55) !important; }
-.od-nav-icon { position: relative; width: 30px; height: 30px; padding: 0; border: 1px solid rgba(255,255,255,.16); border-radius: 9px; color: #e3e6e8; background: rgba(255,255,255,.06); cursor: pointer; }
-.od-nav-icon:hover { background: rgba(255,255,255,.13); }
-.od-nav-icon b { position:absolute; top:-6px; right:-6px; min-width:15px; height:15px; padding:0 4px; border-radius:99px; color:#17191b; background:#f2f3f4; font-size:9px; line-height:15px; }
-.od-bell { font-size:18px; line-height:1; }
-.od-dashboard-run { border-color: rgba(255,255,255,.5) !important; background: rgba(255,255,255,.86) !important; color:#17191b !important; box-shadow:0 0 20px rgba(255,255,255,.12) !important; }
-@media (max-width: 900px) { .od-dashboard-navbar { grid-template-columns: 1fr auto; } .od-dashboard-navbar .header-center-tabs { display:none; } }
+.od-dashboard-navbar .nav-tab-btn.is-active {
+  color: #fff !important;
+}
+
+.od-dashboard-navbar .active-indicator-bar {
+  background: #fff !important;
+  box-shadow: 0 0 10px rgba(255, 255, 255, .4);
+}
+
+.od-dashboard-navbar .od-status-pill {
+  border-color: rgba(255, 255, 255, .18) !important;
+  background: rgba(255, 255, 255, .07) !important;
+  color: #e6e9eb !important;
+}
+
+.od-dashboard-navbar .od-status-dot {
+  background: #dfe3e5 !important;
+  box-shadow: 0 0 8px rgba(255, 255, 255, .8) !important;
+}
+
+.od-dashboard-navbar .od-status-pill em {
+  color: rgba(235, 238, 240, .55) !important;
+}
+
+.od-nav-icon {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 9px;
+  color: #e3e6e8;
+  background: rgba(255, 255, 255, .06);
+  cursor: pointer;
+}
+
+.od-nav-icon:hover {
+  background: rgba(255, 255, 255, .13);
+}
+
+.od-nav-icon b {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 99px;
+  color: #17191b;
+  background: #f2f3f4;
+  font-size: 9px;
+  line-height: 15px;
+}
+
+.od-bell {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.od-dashboard-run {
+  border-color: rgba(255, 255, 255, .5) !important;
+  background: rgba(255, 255, 255, .86) !important;
+  color: #17191b !important;
+  box-shadow: 0 0 20px rgba(255, 255, 255, .12) !important;
+}
+
+@media (max-width: 900px) {
+  .od-dashboard-navbar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .od-dashboard-navbar .header-center-tabs {
+    display: none;
+  }
+}

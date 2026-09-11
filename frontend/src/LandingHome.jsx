@@ -3,7 +3,6 @@ import OrbitalGlobe, { REGION_COORDINATES } from "./OrbitalGlobe.jsx";
 import { startAmbientAudio, stopAmbientAudio, playUiClick } from "./audioEffects.js";
 import { getAlerts, getHotspots, getIncidents } from "./api.js";
 import AlertFeed from "./AlertFeed.jsx";
-import RegionCardMap from "./RegionCardMap.jsx";
 import "./LandingHome.css";
 
 // ─── Surveillance regions with bounding boxes (for counting hotspots) ────
@@ -264,7 +263,7 @@ function WorldOverviewPanel({ stats }) {
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────
-export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMode = false, onWorkspaceNavigate, landingEntrance = false, onLiveView }) {
+export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMode = false, onWorkspaceNavigate, landingEntrance = false }) {
   const [activeTab, setActiveTab] = useState(workspaceMode ? "map" : "Overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
@@ -551,8 +550,8 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
         </div>
       </header>
 
-      {/* ─── Search Bar – stays at top when card open / typing ────────── */}
-      <div className={`search-bar-container ${landingEntrance ? "staged-entrance search-stage" : ""} ${isTyping || cardOpen ? "is-sticky-top" : ""} ${cardOpen ? "is-card-open" : ""} ${isZoomed && !cardOpen ? "is-zoomed" : ""}`} style={{ transition: 'top 0.45s cubic-bezier(.16,1,.3,1), left 0.45s cubic-bezier(.16,1,.3,1), transform 0.45s cubic-bezier(.16,1,.3,1), opacity 0.45s ease' }}>
+      {/* ─── Search Bar – hidden when zoomed ───────────────────────────── */}
+      <div className={`search-bar-container ${landingEntrance ? "staged-entrance search-stage" : ""} ${isTyping ? "is-typing" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.5s, transform 0.5s' }}>
         <div className={`search-pill ${searchFocused ? "is-focused" : ""}`}>
           <svg className="search-icon" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />
@@ -690,18 +689,6 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
                 </div>
               </div>
 
-              <div className="card-map-preview-section">
-                <div className="card-map-header">
-                  <h3 className="sectors-title">Live Map View</h3>
-                  <span className="map-preview-badge">REAL-TIME</span>
-                </div>
-                {selectedRegion.bbox ? (
-                  <RegionCardMap bbox={selectedRegion.bbox} height={220} />
-                ) : selectedRegion.coords ? (
-                  <RegionCardMap center={{ lat: selectedRegion.coords.lat, lon: selectedRegion.coords.lng }} height={220} />
-                ) : null}
-              </div>
-
               <div className="card-telemetry-section">
                 <div className="telemetry-stat">
                   <span className="telemetry-label">Active Hotspots (live)</span>
@@ -722,14 +709,7 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
               </div>
 
               <div className="card-action-row">
-                <button
-                  className="card-launch-btn card-livemap-btn"
-                  onClick={() => { playUiClick(); onLiveView && onLiveView(selectedRegion); }}
-                >
-                  <span>🗺 Open Live Map View</span>
-                  <span className="action-arrow">↗</span>
-                </button>
-                <button className="card-launch-btn" onClick={() => { playUiClick(); onAccess && onAccess(); }} style={{ marginTop: 8 }}>
+                <button className="card-launch-btn" onClick={() => { playUiClick(); onAccess && onAccess(); }}>
                   <span>Launch Tactical Dashboard</span>
                   <span className="action-arrow">↗</span>
                 </button>
