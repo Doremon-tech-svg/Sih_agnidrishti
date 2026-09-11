@@ -65,6 +65,34 @@ router.post('/login', async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/seed-demo ────────────────────────────────────────────────
+// Utility endpoint for live demonstrations to instantly seed the DB with
+// the default Admin, Analyst, and Viewer accounts expected by the frontend.
+router.post('/seed-demo', async (req, res, next) => {
+    try {
+        const TEST_ACCOUNTS = [
+            { email: 'admin@agnidrishti.gov.in', password: 'Admin@2026', role: 'ADMIN', full_name: 'System Admin' },
+            { email: 'analyst@agnidrishti.gov.in', password: 'Analyst@2026', role: 'ANALYST', full_name: 'Lead Analyst' },
+            { email: 'viewer@agnidrishti.gov.in', password: 'Viewer@2026', role: 'VIEWER', full_name: 'Field Viewer' },
+        ];
+        
+        let created = 0;
+        for (const acc of TEST_ACCOUNTS) {
+            const existing = await pool.query('SELECT id FROM users WHERE email=$1', [acc.email]);
+            if (existing.rows.length === 0) {
+                const hash = await bcrypt.hash(acc.password, 12);
+                await pool.query(
+                    `INSERT INTO users (email, password_hash, full_name, role, is_approved, department) 
+                     VALUES ($1, $2, $3, $4, TRUE, 'GSDMA - Gujarat State Disaster Management Authority')`,
+                    [acc.email, hash, acc.full_name, acc.role]
+                );
+                created++;
+            }
+        }
+        res.json({ message: `Successfully seeded ${created} demo accounts.`, ready: true });
+    } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/register ─────────────────────────────────────────────────
 // Creates account with is_approved=false — admin must approve before login works.
 // Users specify their facility (or lat/lon workplace) during registration.

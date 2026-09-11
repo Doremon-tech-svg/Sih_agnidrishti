@@ -1,8 +1,8 @@
 /**
  * AgniDrishti authentication portal.
  */
-import { useRef, useState } from 'react';
-import { login, register, setToken, setUser } from './api.js';
+import { useRef, useState, useEffect } from 'react';
+import { login, register, setToken, setUser, getFacilities } from './api.js';
 import './LoginPage.css';
 import './LandingHome.css';
 import useSeamlessVideo from './useSeamlessVideo.js';
@@ -29,13 +29,18 @@ const TEST_ACCOUNTS = [
 export default function LoginPage({ onAuthSuccess, onRegistrationSuccess }) {
     const [mode, setMode] = useState('login');
     const [contentMode, setContentMode] = useState('login');
-    const [form, setForm] = useState({ email: '', password: '', full_name: '', designation: '', department: '' });
+    const [form, setForm] = useState({ email: '', password: '', full_name: '', designation: '', department: '', phone: '', facility_id: '' });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
     const [cardHeight, setCardHeight] = useState(null);
     const cardRef = useRef(null);
     const { videoRefs, activeIndex, handleTimeUpdate, handleEnded } = useSeamlessVideo();
+    const [facilities, setFacilities] = useState([]);
+
+    useEffect(() => {
+        getFacilities().then(setFacilities);
+    }, []);
 
     const set = (key, value) => setForm(current => ({ ...current, [key]: value }));
     const fillTest = (account) => {
@@ -69,12 +74,13 @@ export default function LoginPage({ onAuthSuccess, onRegistrationSuccess }) {
             const data = await register({
                 email: form.email, password: form.password, full_name: form.full_name,
                 designation: form.designation, department: form.department,
+                phone: form.phone, facility_id: form.facility_id,
             });
             if (onRegistrationSuccess) {
                 onRegistrationSuccess(data);
             } else {
                 setSuccess(data.message || 'Registration submitted. Await administrator approval.');
-                setForm({ email: '', password: '', full_name: '', designation: '', department: '' });
+                setForm({ email: '', password: '', full_name: '', designation: '', department: '', phone: '', facility_id: '' });
             }
         } catch (requestError) {
             setError(requestError.message);
@@ -164,6 +170,7 @@ export default function LoginPage({ onAuthSuccess, onRegistrationSuccess }) {
                     </div>
                     <form onSubmit={mode === 'login' ? handleLogin : handleRegister}>
                         {contentMode === 'register' && <div className="register-only"><Field label="Full name" type="text" placeholder="Dr. Ramesh Patel" value={form.full_name} onChange={value => set('full_name', value)} /></div>}
+                        {contentMode === 'register' && <div className="register-only"><Field label="Phone number" type="tel" placeholder="10-digit mobile number" value={form.phone} onChange={value => set('phone', value)} /></div>}
                         <Field label="Email address" type="email" placeholder={mode === 'login' ? 'officer@agnidrishti.gov.in' : 'you@agency.gov.in'} value={form.email} onChange={value => set('email', value)} />
                         <Field label="Password" type="password" placeholder={mode === 'register' ? 'Minimum 8 characters' : 'Enter your password'} value={form.password} onChange={value => set('password', value)} />
                         {contentMode === 'register' && <>
@@ -173,6 +180,13 @@ export default function LoginPage({ onAuthSuccess, onRegistrationSuccess }) {
                                 <select id="department" value={form.department} onChange={event => set('department', event.target.value)} required>
                                     <option value="">Select department</option>
                                     {DEPARTMENTS.map(department => <option key={department} value={department}>{department}</option>)}
+                                </select>
+                            </div>
+                            <div className="login-field register-only">
+                                <label htmlFor="facility">Work Location (District)</label>
+                                <select id="facility" value={form.facility_id} onChange={event => set('facility_id', event.target.value)} required>
+                                    <option value="">Select your designated location</option>
+                                    {facilities.map(f => <option key={f.id} value={f.id}>{f.name} ({f.district}, {f.state})</option>)}
                                 </select>
                             </div>
                             <div className="login-notice register-only">Your request will be reviewed by an administrator before access is granted.</div>

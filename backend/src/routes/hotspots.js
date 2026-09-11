@@ -109,7 +109,7 @@ router.get('/', async (req, res, next) => {
             if (parts.length === 4 && parts.every(p => !Number.isNaN(p))) {
                 values.push(parts[0], parts[1], parts[2], parts[3]);
                 conditions.push(
-                    `ST_Within(geom, ST_MakeEnvelope($${values.length-3}, $${values.length-2}, $${values.length-1}, $${values.length}, 4326))`
+                    `ST_Within(geom, ST_MakeEnvelope($${values.length - 3}, $${values.length - 2}, $${values.length - 1}, $${values.length}, 4326))`
                 );
             }
         }
@@ -120,7 +120,7 @@ router.get('/', async (req, res, next) => {
         const { rows } = await pool.query(
             `SELECT id, lat, lon, satellite, acq_date, brightness_ti4, frp, confidence,
                     classification, class_confidence, risk_score, facility_id, explanation,
-                    district
+                    district, state, agent2_status, gas_analysis, frp_zscore, anomaly_score, is_anomaly
              FROM hotspots ${where}
              ORDER BY acq_date DESC
              LIMIT ${safeLimit}`,
@@ -150,8 +150,8 @@ router.post('/', async (req, res, next) => {
              ON CONFLICT DO NOTHING
              RETURNING id`,
             [lat, lon, satellite, acq_date, brightness_ti4, frp, confidence,
-             classification, class_confidence, risk_score, facility_id,
-             explanation, raw ? JSON.stringify(raw) : null, district || null]
+                classification, class_confidence, risk_score, facility_id,
+                explanation, raw ? JSON.stringify(raw) : null, district || null]
         );
         if (!rows.length) return res.status(409).json({ message: 'Duplicate, skipped' });
         res.status(201).json({ id: rows[0].id });

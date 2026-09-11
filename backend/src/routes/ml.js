@@ -1,21 +1,12 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
 import { classifyHotspotRow } from '../services/mlService.js';
+import { createAlertAndNotifyAdmin } from '../services/alertService.js';
 
 const router = Router();
 
-function tierFromRisk(score) {
-    if (score >= 76) return 'CRITICAL';
-    if (score >= 51) return 'HIGH';
-    if (score >= 26) return 'MODERATE';
-    return 'LOW';
-}
-
 async function classifyOne(hotspotId) {
-    const { rows } = await pool.query(
-        `SELECT h.* FROM hotspots h WHERE h.id = $1`,
-        [hotspotId]
-    );
+    const { rows } = await pool.query(`SELECT h.* FROM hotspots h WHERE h.id = $1`, [hotspotId]);
     if (!rows.length) throw new Error('Hotspot not found');
     const h = rows[0];
 
@@ -38,25 +29,47 @@ async function classifyOne(hotspotId) {
     );
 
     if (result.dispatch_required) {
-        const priority = tierFromRisk(result.risk_score);
-        await pool.query(
+        const priority = result.priority || result.risk_level;
+        const { rows: [inc] } = await pool.query(
             `INSERT INTO incidents (hotspot_id, agent1, agent2, agent3, status, threat_priority)
-             VALUES ($1,$2,$3,$4,$5,$6)`,
+             VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
             [
                 hotspotId,
-                { source: 'backend/app ML pipeline', frp: h.frp },
-                {
-                    classification: result.classification, confidence: result.confidence,
-                    gas_status: result.agent2_status
-                },
+                { source: 'backend ML pipeline', frp: h.frp },
+                { classification: result.classification, confidence: result.confidence, gas_status: result.agent2_status },
                 { severity_tier: result.severity_tier, risk_score: result.risk_score },
                 'VALIDATED',
                 priority,
             ]
         );
+
+        // Agent 3 entry point: create PENDING alert + notify district admin for confirmation
+        await createAlertAndNotifyAdmin({ ...h, id: hotspotId }, result);
+        result.incident_id = inc.id;
     }
 
     return result;
+}
+
+/**
+ * Classify every unclassified hotspot. Used by both the HTTP route and the
+ * scheduler cron chain (step 5 of the pipeline).
+ */
+export async function classifyAllHotspots(limit = 200) {
+    const { rows } = await pool.query(
+        `SELECT id FROM hotspots WHERE classification IS NULL LIMIT $1`,
+        [limit]
+    );
+    const results = [];
+    for (const row of rows) {
+        try {
+            await classifyOne(row.id);
+            results.push({ id: row.id, ok: true });
+        } catch (e) {
+            results.push({ id: row.id, ok: false, error: e.message });
+        }
+    }
+    return results;
 }
 
 router.post('/classify/:hotspotId', async (req, res) => {
@@ -68,16 +81,7 @@ router.post('/classify/:hotspotId', async (req, res) => {
 });
 
 router.post('/classify-all', async (req, res) => {
-    const { rows } = await pool.query(`SELECT id FROM hotspots WHERE classification IS NULL LIMIT 200`);
-    const results = [];
-    for (const row of rows) {
-        try {
-            await classifyOne(row.id);
-            results.push({ id: row.id, ok: true });
-        } catch (e) {
-            results.push({ id: row.id, ok: false, error: e.message });
-        }
-    }
+    const results = await classifyAllHotspots(200);
     res.json({ processed: results.length, results });
 });
 

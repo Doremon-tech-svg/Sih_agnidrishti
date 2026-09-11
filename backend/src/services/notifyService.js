@@ -55,28 +55,36 @@ async function sendEmailBrevo(to, subject, htmlContent) {
     }
 }
 
-// ── SMS via Textbelt (free demo key) ─────────────────────────────────────
+// ── SMS via Fast2SMS (Free Tier without Credit Card) ─────────────────────────
 
-async function sendSmsTextbelt(phone, message) {
-    const key = process.env.TEXTBELT_KEY || 'textbelt'; // 'textbelt' = 1 free SMS/day
-
+async function sendSmsFast2SMS(phone, message) {
     if (!phone) return { ok: false, error: 'No phone number' };
 
-    if (process.env.SMS_MOCK === 'true' || !process.env.TEXTBELT_KEY) {
+    const apiKey = process.env.FAST2SMS_KEY;
+
+    if (process.env.SMS_MOCK === 'true' || !apiKey) {
         console.log(`[SMS MOCK] To: ${phone}\n${message}`);
         return { ok: true, info: 'mock' };
     }
 
     try {
-        const res = await fetch('https://textbelt.com/text', {
+        const res = await fetch('https://www.fast2sms.com/dev/bulkV2', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, message, key }),
+            headers: {
+                'authorization': apiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                route: 'q',
+                message: message,
+                flash: 0,
+                numbers: phone
+            })
         });
         const data = await res.json();
-        return { ok: data.success, info: data };
+        return { ok: data.return, info: data };
     } catch (e) {
-        console.warn(`[SMS] Textbelt error: ${e.message}`);
+        console.warn(`[SMS] Fast2SMS error: ${e.message}`);
         return { ok: false, error: e.message };
     }
 }
@@ -242,7 +250,7 @@ export async function dispatchAlertToUsers(alertId, users, hotspot, mlResult, ag
 
         // SMS
         if (user.phone) {
-            const smsRes = await sendSmsTextbelt(user.phone, smsText);
+            const smsRes = await sendSmsFast2SMS(user.phone, smsText);
             await _logNotification(alertId, user.id, 'sms', user.phone, smsRes);
             results.push({ userId: user.id, channel: 'sms', ok: smsRes.ok });
         }

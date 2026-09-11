@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { pool } from '../db.js';
 import { dispatchAlert } from '../notify.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { predictHotspot } from '../services/mlService.js';
 
 const router = Router();
 
@@ -64,9 +63,7 @@ router.post('/evaluate', (req, res) => {
         reasons,
     };
 
-    predictHotspot(record)
-        .then((prediction) => res.json({ ...response, ml_prediction: prediction }))
-        .catch(() => res.json({ ...response, ml_prediction: null }));
+    res.json(response);
 });
 
 // POST /api/incidents -- multi-agent pipeline pushes final verdict here
