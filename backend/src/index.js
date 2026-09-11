@@ -36,6 +36,8 @@ app.use(cors({
     origin: frontendUrl ? [frontendUrl, frontendUrl.replace(/\/$/, '')] : '*',
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 200,
 }));
 app.use(express.json({ limit: '5mb' }));
 

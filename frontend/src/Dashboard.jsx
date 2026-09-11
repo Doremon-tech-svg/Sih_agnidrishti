@@ -27,6 +27,7 @@ import {
 } from "./api.js";
 import "./Dashboard.css";
 import "./DashboardBackground.css";
+import PixelatedWorldMap from "./PixelatedWorldMap.jsx";
 
 const CLASS_COLORS = {
   "Gas Flare": "#46d9ff",
@@ -607,7 +608,7 @@ export default function Dashboard({ mlStatus, onRunML, showNavbar = true, onGoLa
         <section className="od-stage">
           <Reveal>
             <div className="od-hero">
-              <OrbitCanvas blipCount={classified.length} />
+              <PixelatedWorldMap blipCount={classified.length} hotspots={classified} />
               <div className="od-hero-overlay">
                 <div className="od-mission">
                   <div className="od-mission-id">
