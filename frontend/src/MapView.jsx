@@ -2,9 +2,7 @@ import { MapContainer, TileLayer, CircleMarker, Popup, GeoJSON } from 'react-lea
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { evaluateIncident, getHotspots, getFacilities } from './api.js';
 import FacilityPanel from './FacilityPanel.jsx';
-//import TimeSlider from './TimeSlider.jsx';
 import Legend from './Legend.jsx';
-import Scene3D from './Scene3D.jsx';
 import ClassFilter from './ClassFilter.jsx';
 import { getRegionInfo, formatCoord, getLandCoverLabel, getSatelliteName } from './geoUtils.js';
 
@@ -140,7 +138,6 @@ export default function MapView({ onHotspotCount }) {
     const [facilities, setFacilities] = useState([]);
     const [selectedFacility, setSelectedFacility] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [show3D, setShow3D] = useState(false);
     const [leftPanelOpen, setLeftPanelOpen] = useState(true);
     const [evaluations, setEvaluations] = useState({});
     const [mapError, setMapError] = useState(null);
@@ -263,8 +260,24 @@ export default function MapView({ onHotspotCount }) {
                             <GeoJSON
                                 key={f.id}
                                 data={geom}
-                                style={{ color: '#64748b', weight: 1.5, fillOpacity: 0.15, fillColor: '#94a3b8' }}
-                                eventHandlers={{ click: () => setSelectedFacility(f.id) }}
+                                style={{ 
+                                    color: '#f97316', 
+                                    weight: 2, 
+                                    fillOpacity: 0.15, 
+                                    fillColor: '#f97316',
+                                    dashArray: '4, 4'
+                                }}
+                                eventHandlers={{ 
+                                    click: () => setSelectedFacility(f.id),
+                                    mouseover: (e) => {
+                                        const layer = e.target;
+                                        layer.setStyle({ fillOpacity: 0.35, weight: 3 });
+                                    },
+                                    mouseout: (e) => {
+                                        const layer = e.target;
+                                        layer.setStyle({ fillOpacity: 0.15, weight: 2 });
+                                    }
+                                }}
                             />
                         );
                     } catch (e) {
@@ -332,22 +345,9 @@ export default function MapView({ onHotspotCount }) {
                 >
                     {leftPanelOpen ? '◀ Hide Filters' : '▶ Show Filters'}
                 </button>
-                <button
-                    className="map-btn"
-                    onClick={() => setShow3D(true)}
-                >
-                    🏔 3D Terrain
-                </button>
             </div>
 
-            {/* Time slider disabled — component not yet implemented */}
-            {/* <TimeSlider hotspots={hotspots} onFilteredChange={handleTimeFiltered} /> */}
-
             <FacilityPanel facilityId={selectedFacility} onClose={() => setSelectedFacility(null)} />
-
-            {show3D && (
-                <Scene3D hotspots={hotspots} facilities={facilities} onClose={() => setShow3D(false)} />
-            )}
         </div>
     );
 }

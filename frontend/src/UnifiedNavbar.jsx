@@ -16,7 +16,7 @@ function TopbarBadge({ status }) {
         );
     }
     if (status.status === 'error') {
-        return <span className="badge badge-critical">✗ ML Error</span>;
+        return <span className="badge badge-critical"></span>;
     }
     return null;
 }

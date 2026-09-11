@@ -6,7 +6,6 @@ import { login, register, setToken, setUser, getFacilities } from './api.js';
 import './LoginPage.css';
 import './LandingHome.css';
 import useSeamlessVideo from './useSeamlessVideo.js';
-import UnifiedNavbar from './UnifiedNavbar.jsx';
 
 const DEPARTMENTS = [
     'GSDMA - Gujarat State Disaster Management Authority',
@@ -26,7 +25,7 @@ const TEST_ACCOUNTS = [
     { email: 'viewer@agnidrishti.gov.in', password: 'Viewer@2026', role: 'VIEWER', color: '#72c7b5' },
 ];
 
-export default function LoginPage({ onAuthSuccess, onRegistrationSuccess }) {
+export default function LoginPage({ onAuthSuccess, onRegistrationSuccess, onBack }) {
     const [mode, setMode] = useState('login');
     const [contentMode, setContentMode] = useState('login');
     const [form, setForm] = useState({ email: '', password: '', full_name: '', designation: '', department: '', phone: '', facility_id: '' });
@@ -120,18 +119,49 @@ export default function LoginPage({ onAuthSuccess, onRegistrationSuccess }) {
     };
 
     return (
-        <main className="login-page page-shell" style={{
+        <main className="login-page" style={{
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',
+            overflowY: 'auto'
         }}>
-            {/* Unified Landing-Style Navbar */}
-            <UnifiedNavbar
-                breadcrumbs={["Welcome", "Mission Control Access"]}
-                onLogoClick={() => onBack && onBack()}
-                ctaLabel="← Back to Home"
-                onCtaClick={() => onBack && onBack()}
-            />
+            {/* Custom Back Button */}
+            <button
+                onClick={() => onBack && onBack()}
+                style={{
+                    position: 'absolute',
+                    top: 24,
+                    left: 24,
+                    zIndex: 100,
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    background: 'rgba(12, 25, 38, 0.45)',
+                    border: '1px solid rgba(173, 211, 244, 0.3)',
+                    color: '#eef7f7',
+                    cursor: 'pointer',
+                    fontFamily: '"Space Grotesk", sans-serif',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+                    transition: 'all 0.2s ease',
+                }}
+                onMouseOver={(e) => {
+                    e.currentTarget.style.background = 'rgba(25, 45, 65, 0.65)';
+                    e.currentTarget.style.borderColor = 'rgba(173, 211, 244, 0.6)';
+                    e.currentTarget.style.transform = 'translateX(-2px)';
+                }}
+                onMouseOut={(e) => {
+                    e.currentTarget.style.background = 'rgba(12, 25, 38, 0.45)';
+                    e.currentTarget.style.borderColor = 'rgba(173, 211, 244, 0.3)';
+                    e.currentTarget.style.transform = 'none';
+                }}
+            >
+                <span style={{ fontSize: '16px' }}>←</span> Back to Home
+            </button>
 
             {[0, 1].map(index => <video
                 key={index}

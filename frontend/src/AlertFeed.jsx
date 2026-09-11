@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getAlerts } from './api.js';
+import { getAlerts, updateAlertStatus, getIncidentReport } from './api.js';
 const TIER_LABEL = { 1: 'Facility', 2: 'District', 3: 'State', 4: 'National' };
 const TIER_COLOR = { 1: '#22c55e', 2: '#f59e0b', 3: '#ef4444', 4: '#a855f7' };
 const TIER_BG    = { 1: 'rgba(34,197,94,0.08)', 2: 'rgba(245,158,11,0.08)', 3: 'rgba(239,68,68,0.1)', 4: 'rgba(168,85,247,0.1)' };
@@ -51,19 +51,39 @@ function AlertItem({ a }) {
             <p style={{ fontSize: 10, color: 'var(--ag-text-secondary)', lineHeight: 1.3, margin: 0 }}>
                 {a.message}
             </p>
-            <div style={{ marginTop: 6, display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ marginTop: 6, display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <button
+                    onClick={async () => {
+                        await updateAlertStatus(a.id, 'ACKNOWLEDGED');
+                        if (a.onDismiss) a.onDismiss(a.id);
+                    }}
+                    style={{
+                        background: 'transparent',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: 4,
+                        padding: '2px 8px',
+                        fontSize: 9,
+                        color: 'var(--ag-text-muted)',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                    }}
+                >
+                    Dismiss
+                </button>
                 <button
                     onClick={fetchReport}
-                    disabled={loadingReport}
+                    disabled={loadingReport || !a.incident_id}
+                    title={!a.incident_id ? "No incident generated for this alert" : ""}
                     style={{
                         background: 'rgba(56, 189, 248, 0.08)',
                         border: '1px solid rgba(56, 189, 248, 0.2)',
                         borderRadius: 4,
                         padding: '2px 8px',
                         fontSize: 9,
-                        color: 'var(--ag-cyan)',
-                        cursor: loadingReport ? 'wait' : 'pointer',
+                        color: !a.incident_id ? 'var(--ag-text-muted)' : 'var(--ag-cyan)',
+                        cursor: loadingReport || !a.incident_id ? 'not-allowed' : 'pointer',
                         fontFamily: 'inherit',
+                        opacity: !a.incident_id ? 0.5 : 1,
                     }}
                 >
                     {loadingReport ? 'Generating…' : report ? 'Hide AI Report' : '✨ AI Report'}
@@ -158,7 +178,17 @@ export default function AlertFeed({ collapsible = true }) {
                     </div>
                 )}
 
-                {!loading && !errored && alerts.map(a => <AlertItem key={a.id} a={a} />)}
+                {!loading && !errored && alerts.filter(a => a.status !== 'ACKNOWLEDGED').map(a => {
+                    const priorityToTier = { 'LOW': 1, 'MODERATE': 2, 'HIGH': 3, 'CRITICAL': 4 };
+                    const mappedAlert = {
+                        ...a,
+                        tier: priorityToTier[a.priority] || 1,
+                        sent_at: a.created_at,
+                        message: a.district ? `${a.ml_result?.classification || 'Fire'} detected in ${a.district}` : `${a.ml_result?.classification || 'Fire'} detection event`,
+                        onDismiss: (id) => setAlerts(prev => prev.filter(al => al.id !== id))
+                    };
+                    return <AlertItem key={a.id} a={mappedAlert} />;
+                })}
             </div>
         </div>
     );

@@ -60,6 +60,9 @@ async function sendEmailBrevo(to, subject, htmlContent) {
 async function sendSmsFast2SMS(phone, message) {
     if (!phone) return { ok: false, error: 'No phone number' };
 
+    // Fast2SMS requires 10-digit numbers without country code.
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+
     const apiKey = process.env.FAST2SMS_KEY;
 
     if (process.env.SMS_MOCK === 'true' || !apiKey) {
@@ -78,7 +81,7 @@ async function sendSmsFast2SMS(phone, message) {
                 route: 'q',
                 message: message,
                 flash: 0,
-                numbers: phone
+                numbers: cleanPhone
             })
         });
         const data = await res.json();

@@ -431,14 +431,20 @@
    -------------------------------------------------------------------------- */
 .search-bar-container {
   position: absolute;
-  top: clamp(430px, 60vh, 510px);
+  top: clamp(380px, 50vh, 440px);
   left: 50%;
   transform: translateX(-50%);
   width: 720px;
   max-width: 90vw;
   z-index: 120;
   pointer-events: auto;
-  transition: top 0.45s cubic-bezier(.16, 1, .3, 1), transform 0.45s cubic-bezier(.16, 1, .3, 1);
+  transition: top 0.45s cubic-bezier(.16, 1, .3, 1), transform 0.45s cubic-bezier(.16, 1, .3, 1), opacity 0.45s ease;
+}
+
+.search-bar-container.is-card-open,
+.search-bar-container.is-zoomed {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .search-bar-container.is-typing,
@@ -483,7 +489,7 @@
 
 .globe-filter-row {
   position: absolute;
-  top: clamp(560px, 74vh, 620px);
+  top: clamp(490px, 66vh, 560px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 120;

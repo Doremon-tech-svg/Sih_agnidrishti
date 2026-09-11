@@ -552,7 +552,7 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
       </header>
 
       {/* ─── Search Bar – stays at top when card open / typing ────────── */}
-      <div className={`search-bar-container ${landingEntrance ? "staged-entrance search-stage" : ""} ${isTyping || cardOpen ? "is-sticky-top is-typing" : ""} ${cardOpen ? "is-card-open" : ""} ${isZoomed && !cardOpen ? "is-zoomed" : ""}`} style={{ transition: 'top 0.45s cubic-bezier(.16,1,.3,1), left 0.45s cubic-bezier(.16,1,.3,1), transform 0.45s cubic-bezier(.16,1,.3,1), opacity 0.45s ease' }}>
+      <div className={`search-bar-container ${landingEntrance ? "staged-entrance search-stage" : ""} ${isTyping ? "is-sticky-top is-typing" : ""} ${cardOpen ? "is-card-open" : ""} ${isZoomed && !cardOpen ? "is-zoomed" : ""}`} style={{ transition: 'top 0.45s cubic-bezier(.16,1,.3,1), left 0.45s cubic-bezier(.16,1,.3,1), transform 0.45s cubic-bezier(.16,1,.3,1), opacity 0.45s ease' }}>
         <div className={`search-pill ${searchFocused ? "is-focused" : ""}`}>
           <svg className="search-icon" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />
@@ -610,9 +610,28 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
       {/* Filters row (workspace mode) – hidden when zoomed, typing or card open */}
       {workspaceMode && (
         <div className={`globe-filter-row ${landingEntrance ? "staged-entrance filter-stage" : ""} ${isTyping || cardOpen ? "is-typing" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.5s' }}>
-          <label>Country<select defaultValue="all"><option value="all">All countries</option><option>India</option><option>United States</option><option>Australia</option></select></label>
-          <label>Region<select defaultValue="all"><option value="all">All regions</option><option>Gujarat</option><option>Simlipal</option><option>Bandipur</option></select></label>
-          <label>Continent<select defaultValue="all"><option value="all">All continents</option><option>Asia</option><option>Europe</option><option>Africa</option><option>Americas</option></select></label>
+          <label>Country
+            <select defaultValue="all" onChange={(e) => { if(e.target.value !== 'all') handleSelectRegion(e.target.value); }}>
+              <option value="all">All countries</option>
+              <option value="India">India</option>
+            </select>
+          </label>
+          <label>Region
+            <select defaultValue="all" onChange={(e) => { if(e.target.value !== 'all') handleSelectRegion(e.target.value); }}>
+              <option value="all">All regions</option>
+              <option value="Gujarat">Gujarat</option>
+              <option value="Simlipal">Simlipal</option>
+              <option value="Bandipur">Bandipur</option>
+              <option value="Himalayas">Himalayas</option>
+              <option value="WesternGhats">Western Ghats</option>
+            </select>
+          </label>
+          <label>Continent
+            <select defaultValue="all">
+              <option value="all">All continents</option>
+              <option>Asia</option>
+            </select>
+          </label>
           <label>Classification<select defaultValue="all"><option value="all">All classes</option><option>Wildfire / Forest Fire</option><option>Industrial Fire / Accident</option><option>Gas Flare</option><option>Agricultural Burning</option></select></label>
           <label>Satellite<select defaultValue="all"><option value="all">All satellites</option><option>VIIRS</option><option>INSAT-3DR</option><option>Sentinel-3</option></select></label>
         </div>

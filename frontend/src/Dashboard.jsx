@@ -431,9 +431,10 @@ export default function Dashboard({ mlStatus, onRunML, showNavbar = true, onGoLa
       avgFrp: v.count ? +(v.frp / v.count).toFixed(1) : 0,
     }));
 
+  const priorityToTier = { 'LOW': 1, 'MODERATE': 2, 'HIGH': 3, 'CRITICAL': 4 };
   const tierCounts = { 1: 0, 2: 0, 3: 0, 4: 0 };
   alerts.forEach((alert) => {
-    const tier = safeNumber(alert.tier);
+    const tier = priorityToTier[alert.priority] || 1;
     if (tier in tierCounts) tierCounts[tier] += 1;
   });
 
@@ -736,25 +737,27 @@ export default function Dashboard({ mlStatus, onRunML, showNavbar = true, onGoLa
                 <EmptyState message="No alerts have been recorded." />
               ) : (
                 <div className="od-alerts">
-                  {alerts.slice(0, 5).map((alert) => {
-                    const meta = TIER_META.find((t) => t.tier === safeNumber(alert.tier));
+                  {alerts.slice(0, 5).map((a) => {
+                    const mappedTier = { 'LOW': 1, 'MODERATE': 2, 'HIGH': 3, 'CRITICAL': 4 }[a.priority] || 1;
+                    const meta = TIER_META.find((t) => t.tier === mappedTier);
+                    const msg = a.district ? `${a.ml_result?.classification || 'Fire'} detected in ${a.district}` : `${a.ml_result?.classification || 'Fire'} detection event`;
                     return (
-                      <article className="od-alert-row" key={alert.id}>
+                      <article className="od-alert-row" key={a.id}>
                         <span
                           className="od-tier-chip"
                           style={{ color: meta?.color, borderColor: meta?.color }}
                         >
-                          Tier {alert.tier}
+                          Tier {mappedTier}
                         </span>
                         <time>
-                          {alert.sent_at
-                            ? new Date(alert.sent_at).toLocaleTimeString([], {
+                          {a.created_at
+                            ? new Date(a.created_at).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
                             })
                             : "—"}
                         </time>
-                        <p>{alert.message}</p>
+                        <p>{msg}</p>
                       </article>
                     );
                   })}

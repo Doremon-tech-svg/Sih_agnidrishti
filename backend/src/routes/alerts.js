@@ -8,7 +8,13 @@ const router = Router();
 // ── GET /api/alerts ──────────────────────────────────────────────────────
 router.get('/', requireAuth, async (req, res, next) => {
     try {
-        const { rows } = await pool.query(`SELECT * FROM alerts ORDER BY created_at DESC LIMIT 500`);
+        const { rows } = await pool.query(`
+            SELECT a.*, i.id as incident_id 
+            FROM alerts a
+            LEFT JOIN incidents i ON a.hotspot_id = i.hotspot_id
+            ORDER BY a.created_at DESC 
+            LIMIT 500
+        `);
         res.json(rows);
     } catch (err) { next(err); }
 });
@@ -37,6 +43,24 @@ router.post('/:id/reject', requireAuth, requireRole('ADMIN', 'SUPER_ADMIN'), asy
     try {
         const result = await rejectAlert(req.params.id, req.user.id);
         res.json(result);
+    } catch (err) { next(err); }
+});
+
+// ── PATCH /api/alerts/:id/status ──────────────────────────────────────
+router.patch('/:id/status', requireAuth, async (req, res, next) => {
+    try {
+        const { status } = req.body;
+        if (!status) {
+            return res.status(400).json({ error: 'Status is required' });
+        }
+        const { rowCount } = await pool.query(
+            `UPDATE alerts SET status = $1 WHERE id = $2`,
+            [status, req.params.id]
+        );
+        if (rowCount === 0) {
+            return res.status(404).json({ error: 'Alert not found' });
+        }
+        res.json({ ok: true, message: 'Status updated' });
     } catch (err) { next(err); }
 });
 

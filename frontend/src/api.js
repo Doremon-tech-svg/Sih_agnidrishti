@@ -172,6 +172,19 @@ export const getAlerts = async () => {
     }
 };
 
+export const updateAlertStatus = async (id, status) => {
+    try {
+        const res = await apiFetch(`${BASE}/alerts/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status })
+        });
+        return res.json();
+    } catch (e) {
+        logError('updateAlertStatus', e.message);
+        return { ok: false, error: e.message };
+    }
+};
+
 export const getMlStatus = async () => {
     try {
         const res = await apiFetch(`${BASE}/ml/status`);

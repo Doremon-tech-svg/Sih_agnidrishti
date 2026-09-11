@@ -1,4 +1,5 @@
-.login-page { position: relative; min-height: 100vh; overflow: auto; isolation: isolate; display: flex; align-items: center; justify-content: center; padding: 72px 32px 64px; background: #05090d; color: #eef7f7; font-family: "Space Grotesk", sans-serif; }
+.login-page { position: relative; height: 100vh; overflow-y: auto; overflow-x: hidden; isolation: isolate; display: flex; flex-direction: column; padding: 72px 32px 64px; background: #05090d; color: #eef7f7; font-family: "Space Grotesk", sans-serif; }
+.login-shell { margin: auto; }
 .login-earth-video, .login-overlay, .login-grid { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .login-earth-video { z-index: -3; object-fit: cover; object-position: center; filter: saturate(.92) brightness(.98); opacity: 0; transition: opacity .55s ease; }
 .login-earth-video.active { opacity: 1; }

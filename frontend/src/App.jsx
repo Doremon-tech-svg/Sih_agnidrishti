@@ -24,6 +24,25 @@ const STATUS_COLOR = { VALIDATED: '#22c55e', DEBUNKED: '#6b7280', FLAGGED: '#f59
 function IncidentRow({ inc }) {
     const p = inc.threat_priority || 'LOW';
     const s = inc.status || 'FLAGGED';
+    
+    let classification = "Unknown Fire Event";
+    let confidence = null;
+    try {
+        if (inc.agent1) {
+            const agent1 = typeof inc.agent1 === 'string' ? JSON.parse(inc.agent1) : inc.agent1;
+            classification = agent1.classification || classification;
+            confidence = agent1.confidence;
+        }
+    } catch(e) {}
+
+    let reason = "";
+    try {
+        if (inc.agent3) {
+            const agent3 = typeof inc.agent3 === 'string' ? JSON.parse(inc.agent3) : inc.agent3;
+            reason = agent3.reason || "";
+        }
+    } catch(e) {}
+
     return (
         <div style={{
             background: 'var(--ag-glass-bg)', border: '1px solid var(--ag-glass-border)',
@@ -48,9 +67,11 @@ function IncidentRow({ inc }) {
                     {new Date(inc.created_at).toLocaleString()}
                 </span>
             </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ag-text-primary)', marginBottom: 2 }}>
+                {classification} {confidence ? `(${(confidence * 100).toFixed(0)}%)` : ''}
+            </div>
             <div style={{ fontSize: 11, color: 'var(--ag-text-secondary)', lineHeight: 1.5 }}>
-                Incident #{inc.id}
-                {inc.agent3?.reason && ` — ${inc.agent3.reason}`}
+                {reason ? reason : `Incident #${inc.id}`}
             </div>
             {inc.agent2_status && (
                 <div style={{
@@ -153,11 +174,11 @@ function LiveViewPage({ region, onBack, onHotspotCount }) {
             {/* Unified Landing-Style Navbar */}
             <UnifiedNavbar
                 breadcrumbs={["Overview", "World Map", region?.name || "Region"]}
-                tabs={[{ id: 'globe', label: '3D Globe' }, { id: 'livemap', label: 'Live Map View' }]}
+                tabs={[{ id: 'livemap', label: 'Live Map View' }]}
                 activeTab="livemap"
-                onTabClick={(id) => id === 'globe' && onBack && onBack()}
+                onTabClick={() => {}}
                 onLogoClick={() => onBack && onBack()}
-                ctaLabel="Back to Globe"
+                ctaLabel="Exit Map"
                 onCtaClick={() => onBack && onBack()}
                 hotspotCount={onHotspotCount ? null : undefined}
             />
