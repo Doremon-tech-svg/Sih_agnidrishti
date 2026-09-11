@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getAlerts, getIncidentReport } from './api.js';
-
+import { getAlerts } from './api.js';
 const TIER_LABEL = { 1: 'Facility', 2: 'District', 3: 'State', 4: 'National' };
 const TIER_COLOR = { 1: '#22c55e', 2: '#f59e0b', 3: '#ef4444', 4: '#a855f7' };
 const TIER_BG    = { 1: 'rgba(34,197,94,0.08)', 2: 'rgba(245,158,11,0.08)', 3: 'rgba(239,68,68,0.1)', 4: 'rgba(168,85,247,0.1)' };
@@ -100,8 +99,8 @@ export default function AlertFeed({ collapsible = true }) {
                 .then(a => { setAlerts(Array.isArray(a) ? a : []); setLoading(false); setErrored(false); })
                 .catch(() => { setLoading(false); setErrored(true); });
         load();
-        const t = setInterval(load, 15000);
-        return () => clearInterval(t);
+        const interval = setInterval(load, 15000);
+        return () => clearInterval(interval);
     }, []);
 
     const criticalCount = alerts.filter(a => a.tier >= 3).length;

@@ -215,3 +215,21 @@ class FirePredictor:
             result_df[f"prob_{s_name}"] = [r["class_probabilities"][s_name] for r in batch_results]
 
         return result_df
+
+    def predict_single(self, record: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Backwards-compatible single-record prediction adapter.
+
+        Returns a minimal dict expected by downstream code/tests:
+        {
+            "threat_class": int,
+            "probability": float,
+            "predicted_label": str
+        }
+        """
+        res = self.predict_record(record)
+        return {
+            "threat_class": int(res["predicted_class"]),
+            "probability": float(res["confidence"]),
+            "predicted_label": res.get("threat_name", res.get("threat_short_name", ""))
+        }

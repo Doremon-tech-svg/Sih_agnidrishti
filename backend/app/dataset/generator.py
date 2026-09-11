@@ -31,6 +31,8 @@ class UnifiedDatasetGenerator:
         output_dir: Optional[Path] = None,
         radius_meters: float = 1000.0,
         radius_degrees: float = 0.05,
+        use_osm: bool = True,
+        fast_mode: bool = False,
     ):
         self.base_dir = (
             Path(base_dir) if base_dir else Path(__file__).resolve().parents[3]
@@ -51,6 +53,8 @@ class UnifiedDatasetGenerator:
 
         self.radius_meters = radius_meters
         self.radius_degrees = radius_degrees
+        self.use_osm = use_osm
+        self.fast_mode = fast_mode
 
         # Reusable engines
         self.validator = FIRMSValidator()
@@ -68,7 +72,7 @@ class UnifiedDatasetGenerator:
 
     def _get_osm_query(self, road_geojson_name: Optional[str]) -> Optional[OSMContextQuery]:
         """Lazy load and cache OSM context queries per road geojson file."""
-        if not self.osm_pbf_file.exists():
+        if not self.use_osm or not self.osm_pbf_file.exists():
             return None
 
         # Determine road file path
@@ -148,7 +152,7 @@ class UnifiedDatasetGenerator:
 
             # LandCover
             landcover = None
-            if self.landcover_extractor:
+            if self.landcover_extractor and not self.fast_mode:
                 try:
                     landcover = self.landcover_extractor.extract_landcover(lat, lon)
                 except Exception:
@@ -196,6 +200,11 @@ class UnifiedDatasetGenerator:
                 "event_id": event_id,
                 "city": city_key,
                 "display_city": config["display_name"],
+                "enrichment_mode": (
+                    "fast_firms_only"
+                    if self.fast_mode
+                    else ("osm_disabled" if not self.use_osm else "full")
+                ),
                 "latitude": lat,
                 "longitude": lon,
                 "acquisition_date": acq_d_str,

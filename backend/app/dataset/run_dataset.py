@@ -34,11 +34,25 @@ def main():
         default=None,
         help="Optional limit on hotspots per city for fast execution",
     )
+    parser.add_argument(
+        "--skip-osm",
+        action="store_true",
+        help="Skip OSM/PBF enrichment for large batches; spatial defaults are used.",
+    )
+    parser.add_argument(
+        "--fast",
+        action="store_true",
+        help="Skip OSM and LandCover lookups for fast FIRMS-only feature generation.",
+    )
 
     args = parser.parse_args()
 
     project_root = Path(__file__).resolve().parents[3]
-    generator = UnifiedDatasetGenerator(base_dir=project_root)
+    generator = UnifiedDatasetGenerator(
+        base_dir=project_root,
+        use_osm=not args.skip_osm and not args.fast,
+        fast_mode=args.fast,
+    )
 
     try:
         if args.all or not args.city:

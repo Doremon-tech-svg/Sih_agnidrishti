@@ -10,7 +10,6 @@ __pycache__/
 
 # Environment
 .env
-backend/venv/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -28,6 +27,7 @@ backend/app/ml/benchmark_input/
 # Node dependencies and frontend build output
 node_modules/
 frontend/dist/
+
 data/raw/osm/*.osm.pbf
 data/raw/**/*.tif
 data/processed/
