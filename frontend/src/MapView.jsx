@@ -2,20 +2,20 @@ import { MapContainer, TileLayer, CircleMarker, Popup, GeoJSON } from 'react-lea
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { evaluateIncident, getHotspots, getFacilities } from './api.js';
 import FacilityPanel from './FacilityPanel.jsx';
-import TimeSlider from './TimeSlider.jsx';
+//import TimeSlider from './TimeSlider.jsx';
 import Legend from './Legend.jsx';
 import Scene3D from './Scene3D.jsx';
 import ClassFilter from './ClassFilter.jsx';
 import { getRegionInfo, formatCoord, getLandCoverLabel, getSatelliteName } from './geoUtils.js';
 
 const COLORS = {
-    'Gas Flare':                  '#f59e0b',
-    'Industrial Thermal Source':  '#3b82f6',
+    'Gas Flare': '#f59e0b',
+    'Industrial Thermal Source': '#3b82f6',
     'Industrial Fire / Accident': '#ef4444',
-    'Agricultural Burning':       '#84cc16',
-    'Wildfire / Forest Fire':     '#f97316',
-    'Mining Thermal Activity':    '#a855f7',
-    'False Positive':             '#6b7280',
+    'Agricultural Burning': '#84cc16',
+    'Wildfire / Forest Fire': '#f97316',
+    'Mining Thermal Activity': '#a855f7',
+    'False Positive': '#6b7280',
 };
 
 const RISK_COLOR = (score) => {
@@ -46,7 +46,7 @@ function HotspotPopup({ h, evaluation, onEvaluate }) {
     const cls = h.classification || 'Unclassified';
     const risk = safeNumber(h.risk_score, null);
     const clsColor = COLORS[cls] || '#9ca3af';
-    
+
     const loc = getRegionInfo(h.lat, h.lon);
     const coordStr = formatCoord(h.lat, h.lon);
     const raw = h.raw || {};
@@ -69,31 +69,31 @@ function HotspotPopup({ h, evaluation, onEvaluate }) {
 
             <div style={{ padding: '0 8px 8px 8px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: '4px 6px', marginBottom: 8 }}>
-                    
+
                     <span style={{ color: '#64748b' }}>Location</span>
-                    <span style={{ fontWeight: 600 }}>{loc.name} <br/><span style={{fontSize: 10, color: '#94a3b8'}}>{coordStr}</span></span>
-                    
+                    <span style={{ fontWeight: 600 }}>{loc.name} <br /><span style={{ fontSize: 10, color: '#94a3b8' }}>{coordStr}</span></span>
+
                     <span style={{ color: '#64748b' }}>Land Cover</span>
                     <span style={{ fontWeight: 500 }}>{landCover}</span>
 
                     <span style={{ color: '#64748b' }}>FRP</span>
                     <span style={{ fontWeight: 700, color: '#ef4444' }}>{safeNumber(h.frp, 0).toFixed(1)} MW</span>
-                    
+
                     <span style={{ color: '#64748b' }}>Risk Score</span>
                     <span style={{ fontWeight: 700, color: risk ? RISK_COLOR(risk) : '#64748b' }}>
                         {risk ? `${risk}/100` : '—'}
                     </span>
-                    
+
                     {h.class_confidence != null && (
                         <>
                             <span style={{ color: '#64748b' }}>ML Conf.</span>
                             <span style={{ fontWeight: 600 }}>{(safeNumber(h.class_confidence, 0) * 100).toFixed(0)}%</span>
                         </>
                     )}
-                    
+
                     <span style={{ color: '#64748b' }}>Satellite</span>
                     <span style={{ fontWeight: 500 }}>{satName}</span>
-                    
+
                     <span style={{ color: '#64748b' }}>Detected</span>
                     <span style={{ fontWeight: 500 }}>{safeDate(h.acq_date).toLocaleString()}</span>
                 </div>
@@ -134,16 +134,16 @@ function HotspotPopup({ h, evaluation, onEvaluate }) {
 }
 
 export default function MapView({ onHotspotCount }) {
-    const [hotspots, setHotspots]               = useState([]);
-    const [timeFiltered, setTimeFiltered]       = useState([]);
-    const [classFiltered, setClassFiltered]     = useState([]);
-    const [facilities, setFacilities]           = useState([]);
+    const [hotspots, setHotspots] = useState([]);
+    const [timeFiltered, setTimeFiltered] = useState([]);
+    const [classFiltered, setClassFiltered] = useState([]);
+    const [facilities, setFacilities] = useState([]);
     const [selectedFacility, setSelectedFacility] = useState(null);
-    const [loading, setLoading]                 = useState(true);
-    const [show3D, setShow3D]                   = useState(false);
-    const [leftPanelOpen, setLeftPanelOpen]     = useState(true);
-    const [evaluations, setEvaluations]         = useState({});
-    const [mapError, setMapError]               = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [show3D, setShow3D] = useState(false);
+    const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+    const [evaluations, setEvaluations] = useState({});
+    const [mapError, setMapError] = useState(null);
 
     const handleEvaluate = async (hotspot) => {
         try {
@@ -174,13 +174,13 @@ export default function MapView({ onHotspotCount }) {
                 // Defensive: ensure arrays
                 const hotspotArray = Array.isArray(h) ? h : [];
                 const facilityArray = Array.isArray(f) ? f : [];
-                
+
                 setHotspots(hotspotArray);
                 setTimeFiltered(hotspotArray);
                 setClassFiltered(hotspotArray);
                 setFacilities(facilityArray);
                 setLoading(false);
-                
+
                 // Report count — safe against undefined/null
                 if (onHotspotCount) onHotspotCount(hotspotArray.length);
             })
@@ -205,7 +205,7 @@ export default function MapView({ onHotspotCount }) {
 
     const handleTimeFiltered = useCallback((filtered) => {
         setTimeFiltered(Array.isArray(filtered) ? filtered : []);
-        setClassFiltered(Array.isArray(filtered) ? filtered : []); 
+        setClassFiltered(Array.isArray(filtered) ? filtered : []);
     }, []);
 
     const handleClassFiltered = useCallback((filtered) => {
@@ -274,14 +274,14 @@ export default function MapView({ onHotspotCount }) {
                 })}
 
                 {visibleHotspots.map(h => {
-                    const cls   = h.classification || 'False Positive';
+                    const cls = h.classification || 'False Positive';
                     const color = COLORS[cls] || '#9ca3af';
-                    const risk  = safeNumber(h.risk_score, 0);
-                    
+                    const risk = safeNumber(h.risk_score, 0);
+
                     let r = 5;
                     let opacity = 0.6;
                     let weight = 1;
-                    
+
                     if (risk >= 76) { r = 11; opacity = 0.95; weight = 2.5; }
                     else if (risk >= 56) { r = 9; opacity = 0.9; weight = 2; }
                     else if (risk >= 31) { r = 7; opacity = 0.8; weight = 1.5; }
@@ -317,7 +317,7 @@ export default function MapView({ onHotspotCount }) {
                         hotspots={timeFiltered}
                         onFilteredChange={handleClassFiltered}
                     />
-                    
+
                     <div style={{ marginTop: 24 }}>
                         <Legend />
                     </div>
@@ -326,13 +326,13 @@ export default function MapView({ onHotspotCount }) {
 
             {/* Controls overlay */}
             <div style={{ position: 'absolute', top: 'calc(var(--topbar-h) + 16px)', left: leftPanelOpen ? 236 : 16, zIndex: 1300, display: 'flex', gap: 10, transition: 'left 0.22s' }}>
-                <button 
+                <button
                     className={`map-btn ${leftPanelOpen ? 'active' : ''}`}
                     onClick={() => setLeftPanelOpen(!leftPanelOpen)}
                 >
                     {leftPanelOpen ? '◀ Hide Filters' : '▶ Show Filters'}
                 </button>
-                <button 
+                <button
                     className="map-btn"
                     onClick={() => setShow3D(true)}
                 >
@@ -340,8 +340,8 @@ export default function MapView({ onHotspotCount }) {
                 </button>
             </div>
 
-            {/* Time slider is positioned absolute at the bottom in the timeslider-bar */}
-            <TimeSlider hotspots={hotspots} onFilteredChange={handleTimeFiltered} />
+            {/* Time slider disabled — component not yet implemented */}
+            {/* <TimeSlider hotspots={hotspots} onFilteredChange={handleTimeFiltered} /> */}
 
             <FacilityPanel facilityId={selectedFacility} onClose={() => setSelectedFacility(null)} />
 

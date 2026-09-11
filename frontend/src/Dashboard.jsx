@@ -341,7 +341,7 @@ function OrbitCanvas({ blipCount }) {
 
 /* ---------------------------------- dashboard ------------------------------- */
 
-export default function Dashboard({ mlStatus, onRunML }) {
+export default function Dashboard({ mlStatus, onRunML, showNavbar = true, onGoLanding }) {
   const [hotspots, setHotspots] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [facilities, setFacilities] = useState([]);
@@ -473,17 +473,17 @@ export default function Dashboard({ mlStatus, onRunML }) {
   const latestAlert = alerts[0];
   const alertAgo = latestAlert?.sent_at
     ? (() => {
-        const mins = Math.floor((now - new Date(latestAlert.sent_at)) / 60000);
-        return mins < 1 ? "just now" : `${mins}m ago`;
-      })()
+      const mins = Math.floor((now - new Date(latestAlert.sent_at)) / 60000);
+      return mins < 1 ? "just now" : `${mins}m ago`;
+    })()
     : "—";
 
   const handleRunML = async () => {
     if (mlRunning) return;
     setMlRunning(true);
-    await runMlPipeline(true).catch(() => {});
+    await runMlPipeline(true).catch(() => { });
     setMlRunning(false);
-    getMlStatus().then(onRunML).catch(() => {});
+    getMlStatus().then(onRunML).catch(() => { });
     refresh();
   };
 
@@ -512,39 +512,45 @@ export default function Dashboard({ mlStatus, onRunML }) {
     <main className="od-dashboard">
       <div className="od-stars" aria-hidden="true" />
 
-      <header className="explorer-header od-dashboard-navbar" role="banner">
-        <div className="header-left">
-          <div className="explorer-brand">
-            <span className="brand-google">Agni</span>
-            <span className="brand-research">Drishti</span>
-            <span className="brand-sep">|</span>
-            <span className="brand-project">Satellite Thermal Explorer</span>
+      {showNavbar && (
+        <header className="explorer-header od-dashboard-navbar" role="banner">
+          <div className="header-left">
+            <div
+              className="explorer-brand"
+              onClick={onGoLanding}
+              style={onGoLanding ? { cursor: 'pointer' } : undefined}
+            >
+              <span className="brand-google">Agni</span>
+              <span className="brand-research">Drishti</span>
+              <span className="brand-sep">|</span>
+              <span className="brand-project">Satellite Thermal Explorer</span>
+            </div>
+            <nav className="explorer-breadcrumbs" aria-label="Breadcrumb">
+              <span className="breadcrumb-item">Overview</span>
+              <span className="breadcrumb-arrow">&gt;</span>
+              <span className="breadcrumb-item active">Dashboard</span>
+            </nav>
           </div>
-          <nav className="explorer-breadcrumbs" aria-label="Breadcrumb">
-            <span className="breadcrumb-item">Overview</span>
-            <span className="breadcrumb-arrow">&gt;</span>
-            <span className="breadcrumb-item active">Dashboard</span>
+          <nav className="header-center-tabs" aria-label="Primary navigation">
+            <button className="nav-tab-btn" onClick={() => navigateNavbar(".od-hero")}>Live Map</button>
+            <button className="nav-tab-btn is-active" onClick={() => navigateNavbar(".od-layout")}>
+              Dashboard<span className="active-indicator-bar" />
+            </button>
+            <button className="nav-tab-btn" onClick={() => navigateNavbar(".od-alerts")}>Incidents</button>
           </nav>
-        </div>
-        <nav className="header-center-tabs" aria-label="Primary navigation">
-          <button className="nav-tab-btn" onClick={() => navigateNavbar(".od-hero")}>Live Map</button>
-          <button className="nav-tab-btn is-active" onClick={() => navigateNavbar(".od-layout")}>
-            Dashboard<span className="active-indicator-bar" />
-          </button>
-          <button className="nav-tab-btn" onClick={() => navigateNavbar(".od-alerts")}>Incidents</button>
-        </nav>
-        <div className="header-right">
-          <div className="od-status-pill"><span className="od-status-dot" />Live<em>{lastRefresh ? lastRefresh.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</em></div>
-          <button className="od-nav-icon" onClick={() => navigateNavbar(".od-alerts")} aria-label="View incidents">
-            <span className="od-bell">◌</span>
-            {alerts.length > 0 && <b>{alerts.length}</b>}
-          </button>
-          <button className="od-nav-icon" onClick={() => navigateNavbar(".od-dashboard")} aria-label="Back to overview">⌘</button>
-          <button className="header-cta-btn od-dashboard-run" onClick={handleRunML} disabled={pipelineBusy}>
-            {pipelineBusy ? "Pipeline running" : "Run analysis"}<span className="cta-arrow">↗</span>
-          </button>
-        </div>
-      </header>
+          <div className="header-right">
+            <div className="od-status-pill"><span className="od-status-dot" />Live<em>{lastRefresh ? lastRefresh.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</em></div>
+            <button className="od-nav-icon" onClick={() => navigateNavbar(".od-alerts")} aria-label="View incidents">
+              <span className="od-bell">◌</span>
+              {alerts.length > 0 && <b>{alerts.length}</b>}
+            </button>
+            <button className="od-nav-icon" onClick={() => navigateNavbar(".od-dashboard")} aria-label="Back to overview">⌘</button>
+            <button className="header-cta-btn od-dashboard-run" onClick={handleRunML} disabled={pipelineBusy}>
+              {pipelineBusy ? "Pipeline running" : "Run analysis"}<span className="cta-arrow">↗</span>
+            </button>
+          </div>
+        </header>
+      )}
 
       {errored && (
         <div className="od-error">
@@ -743,9 +749,9 @@ export default function Dashboard({ mlStatus, onRunML }) {
                         <time>
                           {alert.sent_at
                             ? new Date(alert.sent_at).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
                             : "—"}
                         </time>
                         <p>{alert.message}</p>

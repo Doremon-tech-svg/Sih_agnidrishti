@@ -5,9 +5,9 @@ import { useState, useRef, useEffect } from 'react';
 import { clearToken, clearUser } from './api.js';
 
 const ROLE_COLORS = {
-    ADMIN:   { bg: 'rgba(239,68,68,0.15)',  border: 'rgba(239,68,68,0.35)',  text: '#f87171' },
+    ADMIN: { bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.35)', text: '#f87171' },
     ANALYST: { bg: 'rgba(251,191,36,0.15)', border: 'rgba(251,191,36,0.35)', text: '#fbbf24' },
-    VIEWER:  { bg: 'rgba(34,197,94,0.15)',  border: 'rgba(34,197,94,0.35)',  text: '#4ade80' },
+    VIEWER: { bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.35)', text: '#4ade80' },
 };
 
 const ROLE_ICONS = { ADMIN: '🛡️', ANALYST: '🔬', VIEWER: '👁️' };
@@ -118,13 +118,17 @@ export default function ProfileBadge({ user, onLogout }) {
 
                     {/* Role permissions */}
                     <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                        <div style={{ fontSize: 10, color: 'rgba(138,172,204,0.4)',
-                            textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>
+                        <div style={{
+                            fontSize: 10, color: 'rgba(138,172,204,0.4)',
+                            textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6
+                        }}>
                             Access Level
                         </div>
                         {getPermissions(user.role).map((p, i) => (
-                            <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center',
-                                marginBottom: 3, fontSize: 11, color: 'rgba(138,172,204,0.7)' }}>
+                            <div key={i} style={{
+                                display: 'flex', gap: 6, alignItems: 'center',
+                                marginBottom: 3, fontSize: 11, color: 'rgba(138,172,204,0.7)'
+                            }}>
                                 <span style={{ color: '#4ade80' }}>✓</span> {p}
                             </div>
                         ))}
@@ -155,8 +159,10 @@ export default function ProfileBadge({ user, onLogout }) {
 function InfoRow({ label, value, color }) {
     return (
         <div style={{ display: 'flex', gap: 8, padding: '2px 0', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: 10, color: 'rgba(138,172,204,0.4)',
-                minWidth: 70, paddingTop: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</span>
+            <span style={{
+                fontSize: 10, color: 'rgba(138,172,204,0.4)',
+                minWidth: 70, paddingTop: 1, textTransform: 'uppercase', letterSpacing: 0.5
+            }}>{label}</span>
             <span style={{ fontSize: 11, color: color || 'rgba(138,172,204,0.8)', flex: 1 }}>{value}</span>
         </div>
     );

@@ -52,13 +52,13 @@ export const REGION_COORDINATES = {
 
 // ─── Classification colours ──────────────────────────────────────────────
 const CLASS_COLORS = {
-  'Gas Flare':                  '#f59e0b',
-  'Industrial Thermal Source':  '#3b82f6',
+  'Gas Flare': '#f59e0b',
+  'Industrial Thermal Source': '#3b82f6',
   'Industrial Fire / Accident': '#ef4444',
-  'Agricultural Burning':       '#84cc16',
-  'Wildfire / Forest Fire':     '#f97316',
-  'Mining Thermal Activity':    '#a855f7',
-  'False Positive':             '#6b7280',
+  'Agricultural Burning': '#84cc16',
+  'Wildfire / Forest Fire': '#f97316',
+  'Mining Thermal Activity': '#a855f7',
+  'False Positive': '#6b7280',
 };
 
 // ─── Sprite texture generator for hotspot markers ──────────────────────

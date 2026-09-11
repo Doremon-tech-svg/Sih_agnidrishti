@@ -206,4 +206,50 @@ export const evaluateIncident = async (hotspot) => {
     }
 };
 
+export const getHotspotHeatmap = async (params = {}) => {
+    try {
+        const qs = new URLSearchParams(params).toString();
+        const res = await apiFetch(`${BASE}/hotspots/heatmap${qs ? `?${qs}` : ''}`);
+        return await safeJson(res, { cells: [] });
+    } catch (e) {
+        logError('getHotspotHeatmap', e.message);
+        return { cells: [] };
+    }
+};
+
+export const updateUserLocation = async (id, lat, lon) => {
+    try {
+        const res = await apiFetch(`${BASE}/auth/users/${id}/location`, {
+            method: 'PATCH',
+            body: JSON.stringify({ work_lat: lat, work_lon: lon }),
+        });
+        return await safeJson(res, {});
+    } catch (e) {
+        logError(`updateUserLocation(${id})`, e.message);
+        throw e;
+    }
+};
+
+export const getPendingAlerts = async () => {
+    try {
+        const res = await apiFetch(`${BASE}/alerts/pending`);
+        const data = await safeJson(res, []);
+        return Array.isArray(data) ? data : [];
+    } catch (e) {
+        logError('getPendingAlerts', e.message);
+        return [];
+    }
+};
+
+export const confirmAlert = async (id) => {
+    try {
+        const res = await apiFetch(`${BASE}/alerts/${id}/confirm`, { method: 'POST' });
+        return await safeJson(res, {});
+    } catch (e) {
+        logError(`confirmAlert(${id})`, e.message);
+        throw e;
+    }
+};
+
 export { BASE };
+

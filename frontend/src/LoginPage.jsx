@@ -4,7 +4,9 @@
 import { useRef, useState } from 'react';
 import { login, register, setToken, setUser } from './api.js';
 import './LoginPage.css';
+import './LandingHome.css';
 import useSeamlessVideo from './useSeamlessVideo.js';
+import UnifiedNavbar from './UnifiedNavbar.jsx';
 
 const DEPARTMENTS = [
     'GSDMA - Gujarat State Disaster Management Authority',
@@ -112,7 +114,19 @@ export default function LoginPage({ onAuthSuccess, onRegistrationSuccess }) {
     };
 
     return (
-        <main className="login-page">
+        <main className="login-page page-shell" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+        }}>
+            {/* Unified Landing-Style Navbar */}
+            <UnifiedNavbar
+                breadcrumbs={["Welcome", "Mission Control Access"]}
+                onLogoClick={() => onBack && onBack()}
+                ctaLabel="← Back to Home"
+                onCtaClick={() => onBack && onBack()}
+            />
+
             {[0, 1].map(index => <video
                 key={index}
                 ref={video => { videoRefs.current[index] = video; }}
@@ -124,11 +138,12 @@ export default function LoginPage({ onAuthSuccess, onRegistrationSuccess }) {
                 onTimeUpdate={() => handleTimeUpdate(index)}
                 onEnded={() => handleEnded(index)}
                 aria-hidden="true"
+                style={{ top: 68 }}
             ><source src="/assets/earth_true_rotation_fixed_space.mp4" type="video/mp4" /></video>)}
-            <div className="login-overlay" aria-hidden="true" />
-            <div className="login-grid" aria-hidden="true" />
+            <div className="login-overlay" aria-hidden="true" style={{ top: 68 }} />
+            <div className="login-grid" aria-hidden="true" style={{ top: 68 }} />
 
-            <div className="login-shell">
+            <div className="login-shell" style={{ paddingTop: 68 }}>
                 <section ref={cardRef} className={`login-card ${contentMode === 'register' ? 'register-mode' : ''}`} style={{ height: cardHeight || undefined }} aria-label="Authentication">
                     <div className="login-card-heading">
                         <p className="login-card-label">Mission control access</p>

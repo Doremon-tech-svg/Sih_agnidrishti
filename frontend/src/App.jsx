@@ -5,36 +5,17 @@ import MLPanel from './MLPanel.jsx';
 import EnteringPage from './EnteringPage.jsx';
 import Dashboard from './Dashboard.jsx';
 import LoginPage from './LoginPage.jsx';
-import ProfileBadge from './ProfileBadge.jsx';
 import LandingHome from './LandingHome.jsx';
 import MapView from './MapView.jsx';
+import UnifiedNavbar from './UnifiedNavbar.jsx';
+import './LandingHome.css';
 
-/* ─── Tab config ─────────────────────────────────────────────────────────── */
-const TABS = [
-    { id: 'map', label: '🌍 Orbital Globe' },
-    { id: 'dashboard', label: '📊 Dashboard' },
-    { id: 'incidents', label: '⚠️  Incidents' },
+/* ─── Tab config (landing page style labels — no emojis) ─────────────── */
+const MISSION_TABS = [
+    { id: 'map', label: 'Live Map' },
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'incidents', label: 'Incidents' },
 ];
-
-/* ─── Topbar ML badge ─────────────────────────────────────────────────────── */
-function TopbarBadge({ status }) {
-    if (!status || status.status === 'never_run') return null;
-    if (status.status === 'running') {
-        return <span className="badge badge-running pulse-running">⟳ ML Running</span>;
-    }
-    if (status.status === 'done' && status.summary) {
-        const { validated = 0, patched = 0 } = status.summary;
-        return (
-            <span className="badge badge-done">
-                ✓ {(patched || validated).toLocaleString()} classified
-            </span>
-        );
-    }
-    if (status.status === 'error') {
-        return <span className="badge badge-critical">✗ ML Error</span>;
-    }
-    return null;
-}
 
 /* ─── Incidents list (inline for the incidents tab) ──────────────────────── */
 const PRIORITY_COLOR = { CRITICAL: '#ef4444', HIGH: '#f97316', MODERATE: '#f59e0b', LOW: '#22c55e' };
@@ -164,40 +145,25 @@ function IncidentsTab() {
 /* ─── Live View Page — MapView for a specific region ──────────────────────── */
 function LiveViewPage({ region, onBack, onHotspotCount }) {
     return (
-        <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
-            {/* Top bar */}
-            <header style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: 54,
-                display: 'flex', alignItems: 'center', padding: '0 20px', gap: 14,
-                background: 'rgba(5, 3, 8, 0.95)', borderBottom: '1px solid rgba(56, 189, 248, 0.15)',
-                backdropFilter: 'blur(20px)', zIndex: 2000,
-            }}>
-                <button onClick={onBack} style={{
-                    padding: '6px 14px', borderRadius: 8, cursor: 'pointer',
-                    fontFamily: 'inherit', fontSize: 12, fontWeight: 600,
-                    border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)',
-                    color: '#fff', display: 'flex', alignItems: 'center', gap: 6,
-                    transition: 'all 0.15s ease',
-                }}>
-                    ← Back to Globe
-                </button>
-                <div style={{ flex: 1 }} />
-                <span style={{
-                    fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase',
-                    color: '#38bdf8',
-                }}>
-                    🛰 LIVE SATELLITE VIEW
-                </span>
-                <div style={{ flex: 1 }} />
-                <span style={{
-                    fontSize: 13, fontWeight: 700, color: '#fff',
-                }}>
-                    {region?.name || 'Region'}
-                </span>
-            </header>
+        <div className="page-shell" style={{
+            position: 'relative', width: '100vw', height: '100vh',
+            display: 'flex', flexDirection: 'column',
+            background: 'var(--ag-bg-void)', overflow: 'hidden',
+        }}>
+            {/* Unified Landing-Style Navbar */}
+            <UnifiedNavbar
+                breadcrumbs={["Overview", "World Map", region?.name || "Region"]}
+                tabs={[{ id: 'globe', label: '3D Globe' }, { id: 'livemap', label: 'Live Map View' }]}
+                activeTab="livemap"
+                onTabClick={(id) => id === 'globe' && onBack && onBack()}
+                onLogoClick={() => onBack && onBack()}
+                ctaLabel="Back to Globe"
+                onCtaClick={() => onBack && onBack()}
+                hotspotCount={onHotspotCount ? null : undefined}
+            />
 
             {/* Map fills remaining space */}
-            <div style={{ position: 'absolute', top: 54, left: 0, right: 0, bottom: 0 }}>
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                 <MapView onHotspotCount={onHotspotCount} />
             </div>
         </div>
@@ -316,90 +282,69 @@ export default function App() {
         );
     }
 
-    // Render Full Mission Control (Dashboard / Incidents)
+    // Render Full Mission Control (Dashboard / Incidents) — unified landing-page navbar
+    const handleMissionTabClick = (tabId) => {
+        if (tabId === 'map') {
+            // Live Map tab = switch back to landing 3D globe view
+            setViewMode('landing');
+            return;
+        }
+        setActiveTab(tabId);
+    };
+
+    const missionBreadcrumbs = activeTab === 'incidents'
+        ? ['Overview', 'Mission Control', 'Incidents']
+        : ['Overview', 'Mission Control', 'Dashboard'];
+
     return (
-        <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
+        <div className="page-shell" style={{
+            position: 'relative',
+            width: '100vw',
+            height: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            background: 'var(--ag-bg-void)',
+            color: 'var(--ag-text-primary)',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif',
+            overflow: 'hidden',
+        }}>
+            {/* ── Unified Landing-Style Navbar ── */}
+            <UnifiedNavbar
+                breadcrumbs={missionBreadcrumbs}
+                tabs={MISSION_TABS}
+                activeTab={activeTab}
+                onTabClick={handleMissionTabClick}
+                onLogoClick={() => setViewMode('landing')}
+                mlStatus={mlStatus}
+                hotspotCount={hotspotCount}
+                user={user}
+                onLogout={handleLogout}
+                ctaLabel="Orbital Globe"
+                onCtaClick={() => setViewMode('landing')}
+            />
 
-            {/* ── Top Bar ── */}
-            <header className="topbar">
-                <div className="topbar-brand" onClick={() => setViewMode('landing')} style={{ cursor: 'pointer' }} title="Return to Orbital Explorer">
-                    <span className="status-dot" />
-                    <h1>AgniDrishti</h1>
-                </div>
-
-                <button
-                    onClick={() => setViewMode('landing')}
-                    style={{
-                        padding: '5px 12px', borderRadius: 8, cursor: 'pointer',
-                        fontFamily: 'inherit', fontSize: 11, fontWeight: 600,
-                        border: '1px solid rgba(56, 189, 248, 0.4)',
-                        background: 'rgba(56, 189, 248, 0.12)',
-                        color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 5,
-                        transition: 'all 0.15s ease',
-                    }}
-                    title="Switch to 3D Orbital Explorer"
-                >
-                    🌍 <span>Orbital Explorer</span>
-                </button>
-                <nav style={{ display: 'flex', gap: 4, flex: 1, justifyContent: 'center' }}>
-                    {TABS.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => {
-                                if (tab.id === 'map') {
-                                    setViewMode('landing');
-                                    return;
-                                }
-                                setActiveTab(tab.id);
-                            }}
-                            style={{
-                                padding: '5px 14px', borderRadius: 8, cursor: 'pointer',
-                                fontFamily: 'inherit', fontSize: 12, fontWeight: 600,
-                                transition: 'all 0.15s', border: 'none',
-                                background: activeTab === tab.id && tab.id !== 'map'
-                                    ? 'rgba(59,130,246,0.2)' : 'transparent',
-                                color: activeTab === tab.id && tab.id !== 'map' ? '#60a5fa' : 'var(--text-secondary)',
-                                outline: activeTab === tab.id && tab.id !== 'map'
-                                    ? '1px solid rgba(59,130,246,0.35)' : '1px solid transparent',
-                            }}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </nav>
-
-                <div className="topbar-stats">
-                    {hotspotCount != null && (
-                        <div className="topbar-stat">
-                            🔥 <b>{hotspotCount.toLocaleString()}</b> hotspots
-                        </div>
-                    )}
-                    <div className="topbar-stat">📡 <b>Gujarat</b> industrial belt</div>
-                    <div className="topbar-stat">🛰 VIIRS 375m · NRT</div>
-                </div>
-
-                <div className="topbar-right">
-                    <TopbarBadge status={mlStatus} />
-                    <ProfileBadge user={user} onLogout={handleLogout} />
-                </div>
-            </header>
+            {/* ── Map Tab Placeholder (clicking tab switches to landing) ── */}
 
             {/* ── Dashboard Tab ── */}
             {activeTab === 'dashboard' && (
-                <div style={{
-                    position: 'absolute', top: 'var(--topbar-h)', left: 0, right: 0,
-                    bottom: 0, overflowY: 'auto',
-                }}>
-                    <Dashboard mlStatus={mlStatus} onRunML={setMlStatus} />
+                <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
+                    <Dashboard
+                        mlStatus={mlStatus}
+                        onRunML={setMlStatus}
+                        showNavbar={false}
+                        onGoLanding={() => setViewMode('landing')}
+                    />
                 </div>
             )}
 
             {/* ── Incidents Tab ── */}
             {activeTab === 'incidents' && (
                 <div style={{
-                    position: 'absolute', top: 'var(--topbar-h)', left: 0, right: 0,
-                    bottom: 0, display: 'flex', flexDirection: 'column',
-                    background: 'var(--bg-dark)',
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    background: 'var(--ag-bg-void)',
+                    overflow: 'hidden',
                 }}>
                     <IncidentsTab />
                 </div>
