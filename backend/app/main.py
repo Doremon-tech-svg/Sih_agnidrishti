@@ -80,10 +80,16 @@ def predict(record: HotspotRecord) -> Dict[str, Any]:
 
     risk = risk_engine.evaluate(features)
 
-    incident = incident_pipeline.process_record({
-        **features,
-        "event_id": record.event_id,
-    })
+    ml_classification_for_gas = {
+        "threat_class": ml_result["predicted_class"],
+        "probability": ml_result["confidence"],
+        "predicted_label": ml_result["threat_name"],
+    }
+
+    incident = incident_pipeline.process_record(
+        {**features, "event_id": record.event_id},
+        ml_classification=ml_classification_for_gas,
+    )
 
     return {
         "event_id": record.event_id,
@@ -98,4 +104,8 @@ def predict(record: HotspotRecord) -> Dict[str, Any]:
         "reasons": risk["reasons"],
         "incident_status": incident["status"],
         "dispatch_required": incident["dispatch_required"],
+        "gas_so2_ppb": incident.get("gas_so2_ppb"),
+        "gas_no2_ppb": incident.get("gas_no2_ppb"),
+        "agent2_status": incident.get("agent2_status"),
+        "agent2_recommendation": incident.get("agent2_recommendation"),
     }

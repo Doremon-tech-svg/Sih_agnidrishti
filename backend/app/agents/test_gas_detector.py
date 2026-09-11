@@ -192,7 +192,7 @@ class TestGasDetectorAnalyzer:
 
         assert result["agent2_status"] == "NO_DATA"
         assert result["confidence_delta"] == 0.0  # No boost/penalty
-        assert result["refined_probability"] == result["original_ml_probability"]
+        assert result["refined_probability"] == ml_classification["probability"]
         assert "unavailable" in result["recommendation"].lower()
 
     # ========== Test Case 7: Gas Signature Match Scoring ==========
@@ -298,8 +298,14 @@ def test_integration_with_ml_pipeline():
         "industrial_count": 0
     }
 
-    # ML Prediction
-    ml_pred = predictor.predict_single(hotspot)
+    # ML Prediction — predict_record returns predicted_class/confidence;
+    # gas_detector expects threat_class/probability, so map the keys.
+    raw_pred = predictor.predict_record(hotspot)
+    ml_pred = {
+        "threat_class": raw_pred["predicted_class"],
+        "probability": raw_pred["confidence"],
+        "predicted_label": raw_pred["threat_name"],
+    }
 
     # Gas Detection
     fetcher = MockGasDataFetcher(so2_ppb=150, no2_ppb=250)

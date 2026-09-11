@@ -27,6 +27,10 @@ CREATE TABLE hotspots (
   explanation TEXT,           -- human-readable "why"
   raw JSONB,                  -- room for ML team to dump anything extra
   created_at TIMESTAMPTZ DEFAULT now()
+    gas_so2_ppb NUMERIC,
+    gas_no2_ppb NUMERIC,
+    agent2_status TEXT,
+    agent2_recommendation TEXT,
 );
 
 CREATE TABLE incidents (
@@ -52,3 +56,5 @@ CREATE INDEX hotspots_geom_idx ON hotspots USING GIST (geom);
 CREATE INDEX facilities_geom_idx ON facilities USING GIST (geom);
 CREATE INDEX hotspots_acq_date_idx ON hotspots (acq_date DESC);
 CREATE INDEX hotspots_classification_idx ON hotspots (classification);
+
+    

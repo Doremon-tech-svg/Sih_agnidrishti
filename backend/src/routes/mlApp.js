@@ -48,13 +48,18 @@ async function classifyOne(hotspotId) {
 
     await pool.query(
         `UPDATE hotspots
-     SET classification=$1, class_confidence=$2, risk_score=$3, explanation=$4
-     WHERE id=$5`,
+     SET classification=$1, class_confidence=$2, risk_score=$3, explanation=$4,
+         gas_so2_ppb=$5, gas_no2_ppb=$6, agent2_status=$7, agent2_recommendation=$8
+     WHERE id=$9`,
         [
             result.classification,
             result.confidence,
             Math.round(result.risk_score),
             result.reasons?.join('; ') || null,
+            result.gas_so2_ppb ?? null,
+            result.gas_no2_ppb ?? null,
+            result.agent2_status ?? null,
+            result.agent2_recommendation ?? null,
             hotspotId,
         ]
     );
@@ -67,7 +72,12 @@ async function classifyOne(hotspotId) {
             [
                 hotspotId,
                 { source: 'backend/app ML pipeline', frp: h.frp },
-                { classification: result.classification, confidence: result.confidence },
+                {
+                    status: result.agent2_status ?? 'NOT_RUN',
+                    so2_ppb: result.gas_so2_ppb ?? null,
+                    no2_ppb: result.gas_no2_ppb ?? null,
+                    recommendation: result.agent2_recommendation ?? null,
+                },
                 { severity_tier: result.severity_tier, risk_score: result.risk_score },
                 'VALIDATED',
                 priority,

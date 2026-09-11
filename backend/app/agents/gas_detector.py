@@ -31,7 +31,7 @@ class GasDetectorAnalyzer:
             "description": "Biomass burning signature (high NO2, low SO2)"
         },
         2: {  # Wildfire / Vegetation Fuel Fire
-            "so2_range": (0, 200),
+            "so2_range": (30, 200),
             "no2_range": (100, 400),
             "confidence_boost": +0.25,
             "description": "Pure combustion signature (high NO2, minimal SO2)"
@@ -223,7 +223,7 @@ class GasDetectorAnalyzer:
             match = 0.20
 
         # Adjustment: Check for reasonable absolute levels
-        if so2_ppb < 5 and no2_ppb < 5:
+        if so2_ppb < 20 and no2_ppb < 20:
             # No gas elevation at all - reduce match for high threat classes
             if threat_class in [2, 3]:
                 match -= 0.30
@@ -256,8 +256,8 @@ class GasDetectorAnalyzer:
         # Base confidence boost from signature match
         base_boost = self.GAS_THREAT_SIGNATURES[threat_class]["confidence_boost"]
 
-        # Scale boost by how well gases match signature
-        scaled_boost = base_boost * gas_match
+        #  Scale boost by how well gases match signature (signed: below 0.5 match = penalty, above = boost)
+        scaled_boost = base_boost * (gas_match - 0.5) * 2
 
         # Additional boost if both SO2 and NO2 are elevated
         if so2_ppb > 100 and no2_ppb > 100:

@@ -71,6 +71,21 @@ function IncidentRow({ inc }) {
                 Incident #{inc.id}
                 {inc.agent3?.reason && ` — ${inc.agent3.reason}`}
             </div>
+            {inc.agent2_status && (
+                <div style={{
+                    marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--ag-glass-border)',
+                    fontSize: 10, color: 'var(--ag-text-muted)',
+                }}>
+                    <span style={{ fontWeight: 700, color: 'var(--ag-cyan)' }}>Agent 2 (Gas)</span>
+                    {' — '}
+                    {inc.agent2_status}
+                    {inc.gas_so2_ppb != null && ` · SO₂ ${inc.gas_so2_ppb} ppb`}
+                    {inc.gas_no2_ppb != null && ` · NO₂ ${inc.gas_no2_ppb} ppb`}
+                    {inc.agent2_recommendation && (
+                        <div style={{ marginTop: 4, fontStyle: 'italic' }}>{inc.agent2_recommendation}</div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

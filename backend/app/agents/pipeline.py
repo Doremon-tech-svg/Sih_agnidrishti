@@ -6,17 +6,20 @@ import pandas as pd
 
 from backend.app.anomaly import AnomalyDetector
 from backend.app.risk.engine import RiskEngine
+from backend.app.agents.gas_detector import GasDetectorAnalyzer
 
 
 class IncidentPipeline:
     """Create explainable incident records from feature dictionaries."""
 
-    def __init__(self, anomaly_threshold: float = 70.0):
+    def __init__(self, anomaly_threshold: float = 70.0, enable_gas_check: bool = True):
         self.anomaly_threshold = anomaly_threshold
         self.anomaly_detector = AnomalyDetector()
         self.risk_engine = RiskEngine()
+        self.enable_gas_check = enable_gas_check
+        self.gas_detector = GasDetectorAnalyzer() if enable_gas_check else None
 
-    def process_record(self, record: Dict[str, Any]) -> Dict[str, Any]:
+    def process_record(self, record: Dict[str, Any], ml_classification: Dict[str, Any] = None) -> Dict[str, Any]:
         """Run detector, skeptic, and dispatcher for one hotspot."""
         risk = self.risk_engine.evaluate(record)
         is_candidate = risk["risk_score"] >= self.anomaly_threshold
@@ -33,7 +36,7 @@ class IncidentPipeline:
         else:
             status = "MONITORED"
 
-        return {
+        result = {
             "event_id": record.get("event_id"),
             "status": status,
             "detected": True,
@@ -43,6 +46,17 @@ class IncidentPipeline:
             "dispatch_required": status == "VALIDATED",
             "reasons": reasons,
         }
+
+        # Agent 2: gas signature verification (only for validated candidates)
+        if self.enable_gas_check and ml_classification and status == "VALIDATED":
+            gas_result = self.gas_detector.analyze_hotspot(record, ml_classification)
+            result["gas_so2_ppb"] = gas_result["gas_analysis"]["so2_ppb"]
+            result["gas_no2_ppb"] = gas_result["gas_analysis"]["no2_ppb"]
+            result["agent2_status"] = gas_result["agent2_status"]
+            result["agent2_recommendation"] = gas_result["recommendation"]
+            result["reasons"].append(gas_result["recommendation"])
+
+        return result
 
     def process_dataframe(self, frame: pd.DataFrame) -> pd.DataFrame:
         """Append structured incident decisions to every input row."""

@@ -1,0 +1,5 @@
+ALTER TABLE hotspots
+    ADD COLUMN IF NOT EXISTS gas_so2_ppb NUMERIC,
+    ADD COLUMN IF NOT EXISTS gas_no2_ppb NUMERIC,
+    ADD COLUMN IF NOT EXISTS agent2_status TEXT,
+    ADD COLUMN IF NOT EXISTS agent2_recommendation TEXT;

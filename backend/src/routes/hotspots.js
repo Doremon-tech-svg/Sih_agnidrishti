@@ -13,7 +13,8 @@ router.get('/', async (req, res, next) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const { rows } = await pool.query(
       `SELECT id, lat, lon, satellite, acq_date, brightness_ti4, frp, confidence,
-              classification, class_confidence, risk_score, facility_id, explanation
+              classification, class_confidence, risk_score, facility_id, explanation,
+              gas_so2_ppb, gas_no2_ppb, agent2_status, agent2_recommendation
        FROM hotspots ${where} ORDER BY acq_date DESC LIMIT 5000`,
       values
     );
@@ -47,11 +48,17 @@ router.post('/', async (req, res, next) => {
 
 router.patch('/:id', async (req, res, next) => {
   try {
-    const { classification, class_confidence, risk_score, explanation } = req.body;
+    const {
+      classification, class_confidence, risk_score, explanation,
+      gas_so2_ppb, gas_no2_ppb, agent2_status, agent2_recommendation
+    } = req.body;
     await pool.query(
-      `UPDATE hotspots SET classification=$1, class_confidence=$2, risk_score=$3, explanation=$4
-       WHERE id=$5`,
-      [classification, class_confidence, risk_score, explanation, req.params.id]
+      `UPDATE hotspots SET classification=$1, class_confidence=$2, risk_score=$3, explanation=$4,
+              gas_so2_ppb=$5, gas_no2_ppb=$6, agent2_status=$7, agent2_recommendation=$8
+       WHERE id=$9`,
+      [classification, class_confidence, risk_score, explanation,
+        gas_so2_ppb ?? null, gas_no2_ppb ?? null, agent2_status ?? null, agent2_recommendation ?? null,
+        req.params.id]
     );
     res.sendStatus(204);
   } catch (err) { next(err); }
