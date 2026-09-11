@@ -3,6 +3,7 @@ import OrbitalGlobe, { REGION_COORDINATES } from "./OrbitalGlobe.jsx";
 import { startAmbientAudio, stopAmbientAudio, playUiClick } from "./audioEffects.js";
 import { getAlerts, getHotspots, getIncidents } from "./api.js";
 import AlertFeed from "./AlertFeed.jsx";
+import RegionCardMap from "./RegionCardMap.jsx";
 import "./LandingHome.css";
 
 // ─── Surveillance regions with bounding boxes (for counting hotspots) ────
@@ -263,7 +264,7 @@ function WorldOverviewPanel({ stats }) {
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────
-export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMode = false, onWorkspaceNavigate, landingEntrance = false }) {
+export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMode = false, onWorkspaceNavigate, landingEntrance = false, onLiveView }) {
   const [activeTab, setActiveTab] = useState(workspaceMode ? "map" : "Overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
@@ -288,7 +289,7 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
     const loadAlerts = () => {
       getAlerts()
         .then(a => setAlerts(Array.isArray(a) ? a : []))
-        .catch(() => {});
+        .catch(() => { });
     };
     loadAlerts();
     const interval = setInterval(loadAlerts, 15000);
@@ -299,7 +300,7 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
     const loadHotspots = () => {
       getHotspots()
         .then(data => setHotspots(Array.isArray(data) ? data : []))
-        .catch(() => {});
+        .catch(() => { });
     };
     loadHotspots();
     const interval = setInterval(loadHotspots, 30000);
@@ -455,8 +456,8 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
         onHotspotClick={handleHotspotClick}
       />
 
-      {/* Hero text – fades out when zoomed */}
-      <section className={`landing-hero-copy ${landingEntrance ? "hero-entry" : ""} ${isTyping ? "is-typing" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.5s' }}>
+      {/* Hero text – fades out when zoomed, typing or when card is open */}
+      <section className={`landing-hero-copy ${landingEntrance ? "hero-entry" : ""} ${isTyping || cardOpen ? "is-typing is-card-open" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.4s ease' }}>
         <h1>Explore the planet&apos;s thermal signals</h1>
         <p>Real-time wildfire and industrial heat intelligence from orbit.</p>
       </section>
@@ -550,8 +551,8 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
         </div>
       </header>
 
-      {/* ─── Search Bar – hidden when zoomed ───────────────────────────── */}
-      <div className={`search-bar-container ${landingEntrance ? "staged-entrance search-stage" : ""} ${isTyping ? "is-typing" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.5s, transform 0.5s' }}>
+      {/* ─── Search Bar – stays at top when card open / typing ────────── */}
+      <div className={`search-bar-container ${landingEntrance ? "staged-entrance search-stage" : ""} ${isTyping || cardOpen ? "is-sticky-top is-typing" : ""} ${cardOpen ? "is-card-open" : ""} ${isZoomed && !cardOpen ? "is-zoomed" : ""}`} style={{ transition: 'top 0.45s cubic-bezier(.16,1,.3,1), left 0.45s cubic-bezier(.16,1,.3,1), transform 0.45s cubic-bezier(.16,1,.3,1), opacity 0.45s ease' }}>
         <div className={`search-pill ${searchFocused ? "is-focused" : ""}`}>
           <svg className="search-icon" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />
@@ -606,9 +607,9 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
         )}
       </div>
 
-      {/* Filters row (workspace mode) – hidden when zoomed */}
+      {/* Filters row (workspace mode) – hidden when zoomed, typing or card open */}
       {workspaceMode && (
-        <div className={`globe-filter-row ${landingEntrance ? "staged-entrance filter-stage" : ""} ${isTyping ? "is-typing" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.5s' }}>
+        <div className={`globe-filter-row ${landingEntrance ? "staged-entrance filter-stage" : ""} ${isTyping || cardOpen ? "is-typing" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.5s' }}>
           <label>Country<select defaultValue="all"><option value="all">All countries</option><option>India</option><option>United States</option><option>Australia</option></select></label>
           <label>Region<select defaultValue="all"><option value="all">All regions</option><option>Gujarat</option><option>Simlipal</option><option>Bandipur</option></select></label>
           <label>Continent<select defaultValue="all"><option value="all">All continents</option><option>Asia</option><option>Europe</option><option>Africa</option><option>Americas</option></select></label>
@@ -617,8 +618,8 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
         </div>
       )}
 
-      {/* ─── World Overview stat strip – hidden when zoomed ────────────── */}
-      {!cardOpen && !searchFocused && !isZoomed && <WorldOverviewPanel stats={worldStats} />}
+      {/* ─── World Overview stat strip – hidden when zoomed or typing ────────────── */}
+      {!cardOpen && !isTyping && !isZoomed && <WorldOverviewPanel stats={worldStats} />}
 
       {/* ─── Side panel ──────────────────────────────────────────────────── */}
       {cardOpen && (selectedRegion || selectedHotspot) && (
@@ -689,6 +690,18 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
                 </div>
               </div>
 
+              <div className="card-map-preview-section">
+                <div className="card-map-header">
+                  <h3 className="sectors-title">Live Map View</h3>
+                  <span className="map-preview-badge">REAL-TIME</span>
+                </div>
+                {selectedRegion.bbox ? (
+                  <RegionCardMap bbox={selectedRegion.bbox} height={220} />
+                ) : selectedRegion.coords ? (
+                  <RegionCardMap center={{ lat: selectedRegion.coords.lat, lon: selectedRegion.coords.lng }} height={220} />
+                ) : null}
+              </div>
+
               <div className="card-telemetry-section">
                 <div className="telemetry-stat">
                   <span className="telemetry-label">Active Hotspots (live)</span>
@@ -709,7 +722,14 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
               </div>
 
               <div className="card-action-row">
-                <button className="card-launch-btn" onClick={() => { playUiClick(); onAccess && onAccess(); }}>
+                <button
+                  className="card-launch-btn card-livemap-btn"
+                  onClick={() => { playUiClick(); onLiveView && onLiveView(selectedRegion); }}
+                >
+                  <span>🗺 Open Live Map View</span>
+                  <span className="action-arrow">↗</span>
+                </button>
+                <button className="card-launch-btn" onClick={() => { playUiClick(); onAccess && onAccess(); }} style={{ marginTop: 8 }}>
                   <span>Launch Tactical Dashboard</span>
                   <span className="action-arrow">↗</span>
                 </button>
