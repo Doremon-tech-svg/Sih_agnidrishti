@@ -550,8 +550,8 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
         </div>
       </header>
 
-      {/* ─── Search Bar – stays at top when card open / typing ────────── */}
-      <div className={`search-bar-container ${landingEntrance ? "staged-entrance search-stage" : ""} ${isTyping || cardOpen ? "is-sticky-top" : ""} ${cardOpen ? "is-card-open" : ""} ${isZoomed && !cardOpen ? "is-zoomed" : ""}`} style={{ transition: 'top 0.45s cubic-bezier(.16,1,.3,1), left 0.45s cubic-bezier(.16,1,.3,1), transform 0.45s cubic-bezier(.16,1,.3,1), opacity 0.45s ease' }}>
+      {/* ─── Search Bar – hidden when zoomed ───────────────────────────── */}
+      <div className={`search-bar-container ${landingEntrance ? "staged-entrance search-stage" : ""} ${isTyping ? "is-typing" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.5s, transform 0.5s' }}>
         <div className={`search-pill ${searchFocused ? "is-focused" : ""}`}>
           <svg className="search-icon" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />
