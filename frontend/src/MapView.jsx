@@ -340,8 +340,8 @@ export default function MapView({ onHotspotCount }) {
                 </button>
             </div>
 
-            {/* Time slider is positioned absolute at the bottom in the timeslider-bar */}
-            <TimeSlider hotspots={hotspots} onFilteredChange={handleTimeFiltered} />
+            {/* Time slider disabled — component not yet implemented */}
+            {/* <TimeSlider hotspots={hotspots} onFilteredChange={handleTimeFiltered} /> */}
 
             <FacilityPanel facilityId={selectedFacility} onClose={() => setSelectedFacility(null)} />
 
