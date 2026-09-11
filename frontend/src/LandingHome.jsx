@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import OrbitalGlobe, { REGION_COORDINATES } from "./OrbitalGlobe.jsx";
 import { startAmbientAudio, stopAmbientAudio, playUiClick } from "./audioEffects.js";
-import { getAlerts, getHotspots, getIncidents, getUser as apiGetUser } from "./api.js";
+import { getAlerts, getHotspots, getIncidents } from "./api.js";
 import AlertFeed from "./AlertFeed.jsx";
-import RegionCardMap from './RegionCardMap.jsx';
-import AdminAlerts from './AdminAlerts.jsx';
-import ProfileLocation from './ProfileLocation.jsx';
 import "./LandingHome.css";
 
 // ─── Surveillance regions with bounding boxes (for counting hotspots) ────
@@ -276,7 +273,6 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
   const [zoomLevel, setZoomLevel] = useState(0);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const [hotspots, setHotspots] = useState([]);
   const [selectedHotspot, setSelectedHotspot] = useState(null);
@@ -460,7 +456,7 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
       />
 
       {/* Hero text – fades out when zoomed */}
-      <section className={`landing-hero-copy ${landingEntrance && !isZoomed ? "hero-entry" : ""} ${isTyping ? "is-typing" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.5s' }}>
+      <section className={`landing-hero-copy ${landingEntrance ? "hero-entry" : ""} ${isTyping ? "is-typing" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.5s' }}>
         <h1>Explore the planet&apos;s thermal signals</h1>
         <p>Real-time wildfire and industrial heat intelligence from orbit.</p>
       </section>
@@ -515,29 +511,6 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
             <span>{soundOn ? "Sound on" : "Sound off"}</span>
           </button>
 
-          {apiGetUser() ? (
-            <div className="profile-section" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '12px' }}>
-              <div 
-                className="profile-avatar" 
-                style={{
-                  width: '32px', height: '32px', borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#fff', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer',
-                  border: '2px solid rgba(255,255,255,0.2)'
-                }}
-                onClick={() => setAdminOpen(v => apiGetUser()?.role === 'ADMIN' ? !v : v)}
-                title={apiGetUser()?.role === 'ADMIN' ? "Open Admin Panel" : "Profile"}
-              >
-                {apiGetUser()?.name ? apiGetUser().name.charAt(0).toUpperCase() : 'U'}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', fontSize: '12px' }}>
-                <span style={{ color: '#fff', fontWeight: 500 }}>{apiGetUser()?.name || 'User'}</span>
-                <span style={{ color: 'rgba(255,255,255,0.5)' }}>{apiGetUser()?.role}</span>
-              </div>
-            </div>
-          ) : null}
-
           <button className="notification-bell" onClick={() => setNotificationsOpen(!notificationsOpen)} aria-label="Toggle notifications">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -550,10 +523,6 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
               <AlertFeed collapsible={false} />
             </div>
           )}
-
-          {adminOpen && apiGetUser()?.role === 'ADMIN' ? (
-            <AdminAlerts onClose={() => setAdminOpen(false)} />
-          ) : null}
 
           <button className="app-grid-icon-btn" onClick={() => setInfoModalOpen(true)}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -581,8 +550,8 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
         </div>
       </header>
 
-      {/* ─── Search Bar – hidden when zoomed ───────────────────────────── */}
-      <div className={`search-bar-container ${landingEntrance && !isZoomed ? "staged-entrance search-stage" : ""} ${isTyping ? "is-typing" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.5s, transform 0.5s' }}>
+      {/* ─── Search Bar – stays at top when card open / typing ────────── */}
+      <div className={`search-bar-container ${landingEntrance ? "staged-entrance search-stage" : ""} ${isTyping || cardOpen ? "is-sticky-top" : ""} ${cardOpen ? "is-card-open" : ""} ${isZoomed && !cardOpen ? "is-zoomed" : ""}`} style={{ transition: 'top 0.45s cubic-bezier(.16,1,.3,1), left 0.45s cubic-bezier(.16,1,.3,1), transform 0.45s cubic-bezier(.16,1,.3,1), opacity 0.45s ease' }}>
         <div className={`search-pill ${searchFocused ? "is-focused" : ""}`}>
           <svg className="search-icon" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />
@@ -639,7 +608,7 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
 
       {/* Filters row (workspace mode) – hidden when zoomed */}
       {workspaceMode && (
-        <div className={`globe-filter-row ${landingEntrance && !isZoomed ? "staged-entrance filter-stage" : ""} ${isTyping ? "is-typing" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.5s' }}>
+        <div className={`globe-filter-row ${landingEntrance ? "staged-entrance filter-stage" : ""} ${isTyping ? "is-typing" : ""} ${isZoomed ? "is-zoomed" : ""}`} style={{ transition: 'opacity 0.5s' }}>
           <label>Country<select defaultValue="all"><option value="all">All countries</option><option>India</option><option>United States</option><option>Australia</option></select></label>
           <label>Region<select defaultValue="all"><option value="all">All regions</option><option>Gujarat</option><option>Simlipal</option><option>Bandipur</option></select></label>
           <label>Continent<select defaultValue="all"><option value="all">All continents</option><option>Asia</option><option>Europe</option><option>Africa</option><option>Americas</option></select></label>
@@ -718,11 +687,6 @@ export default function LandingHome({ onSignOut, onAccess, onLogin, workspaceMod
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Mini region map + heatmap */}
-              <div style={{ marginTop: 10 }}>
-                <RegionCardMap bbox={selectedRegion.bbox} />
               </div>
 
               <div className="card-telemetry-section">
