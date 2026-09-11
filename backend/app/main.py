@@ -153,19 +153,47 @@ class Agent2Payload(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────────────────
 
 def _build_full_result(record: HotspotRecord) -> Dict[str, Any]:
-    """Run the complete pipeline for one hotspot record and return combined result."""
+    """Run the complete pipeline for one hotspot: features -> ML classification
+    -> Agent 2 gas verification -> risk scoring (gas-aware) -> incident status.
+    Gas verification now runs BEFORE risk scoring for every caller of this
+    function (/predict, /predict/batch, /pipeline/full) so it actually
+    influences risk_score and dispatch_required, not just decoration after."""
     raw = record.model_dump()
     engineer = get_engineer()
     predictor = get_predictor()
     risk_engine = get_risk_engine()
     incident_pipeline = get_incident_pipeline()
+    gas_analyzer = get_gas_analyzer()
 
     features = engineer.transform_record(raw)
+
+    # Step 1: ML classification
     ml_result = predictor.predict_record(features)
+
+    # Step 2: Agent 2 — gas verification, refines confidence before risk scoring
+    ml_classification = {
+        "threat_class": ml_result["predicted_class"],
+        "probability": ml_result["confidence"],
+        "predicted_label": ml_result["threat_name"],
+    }
+    gas_result = gas_analyzer.analyze_hotspot(raw, ml_classification)
+
+    # Inject gas evidence into the feature dict so RiskEngine's gas pillar can see it
+    features["agent2_status"] = gas_result["agent2_status"]
+    features["gas_signature_match"] = gas_result["gas_analysis"]["gas_signature_match"]
+    features["gas_so2_ppb"] = gas_result["gas_analysis"]["so2_ppb"]
+    features["gas_no2_ppb"] = gas_result["gas_analysis"]["no2_ppb"]
+
+    refined_confidence = gas_result["refined_probability"]
+
+    # Step 3: Risk scoring — now gas-aware
     risk = risk_engine.evaluate(features)
+
+    # Step 4: Incident decision
     incident = incident_pipeline.process_record({
         **features,
         "event_id": record.event_id,
+        "confidence_score": refined_confidence,
     })
 
     return {
@@ -175,7 +203,8 @@ def _build_full_result(record: HotspotRecord) -> Dict[str, Any]:
         "classification": ml_result["threat_name"],
         "threat_short_name": ml_result["threat_short_name"],
         "predicted_class": ml_result["predicted_class"],
-        "confidence": ml_result["confidence"],
+        "confidence": round(refined_confidence, 4),
+        "original_ml_confidence": round(ml_result["confidence"], 4),
         "severity_score": ml_result["severity_score"],
         "severity_tier": ml_result["severity_tier"],
         "class_probabilities": ml_result["class_probabilities"],
@@ -184,6 +213,11 @@ def _build_full_result(record: HotspotRecord) -> Dict[str, Any]:
         "reasons": risk["reasons"],
         "incident_status": incident["status"],
         "dispatch_required": incident["dispatch_required"],
+        "agent2_status": gas_result["agent2_status"],
+        "agent2_recommendation": gas_result["recommendation"],
+        "gas_analysis": gas_result["gas_analysis"],
+        "confidence_delta": gas_result["confidence_delta"],
+        "flags": gas_result["flags"],
     }
 
 
@@ -293,39 +327,11 @@ def agent2_analyze(payload: Agent2Payload) -> Dict[str, Any]:
 
 @app.post("/pipeline/full")
 def pipeline_full(record: HotspotRecord) -> Dict[str, Any]:
-    """
-    One-shot full pipeline: ML classification → Agent2 gas verification → risk score.
-
-    This is the primary endpoint called by Express to classify a hotspot.
-    Returns combined ml + agent2 + risk result in one response.
-    """
+    """One-shot full pipeline: ML classification -> Agent2 gas verification
+    (gas-aware) -> risk score. Identical to /predict — kept as a separate
+    route name for backward-compatible callers."""
     try:
-        # Step 1: ML classification
-        ml_result = _build_full_result(record)
-
-        # Step 2: Agent2 gas detector verification
-        gas_analyzer = get_gas_analyzer()
-        ml_classification = {
-            "threat_class": ml_result["predicted_class"],
-            "probability": ml_result["confidence"],
-            "predicted_label": ml_result["classification"],
-        }
-        hotspot_dict = record.model_dump()
-        agent2_result = gas_analyzer.analyze_hotspot(hotspot_dict, ml_classification)
-
-        # Step 3: Merge — agent2 refines the final probability
-        refined_confidence = agent2_result.get("refined_probability", ml_result["confidence"])
-        agent2_status = agent2_result.get("agent2_status", "NO_DATA")
-
-        return {
-            **ml_result,
-            "refined_confidence": round(refined_confidence, 4),
-            "agent2_status": agent2_status,
-            "agent2_recommendation": agent2_result.get("recommendation", ""),
-            "gas_analysis": agent2_result.get("gas_analysis", {}),
-            "confidence_delta": agent2_result.get("confidence_delta", 0.0),
-            "flags": agent2_result.get("flags", []),
-        }
+        return _build_full_result(record)
     except FileNotFoundError as e:
         raise HTTPException(status_code=503, detail=f"Model not trained yet: {e}")
     except Exception as e:

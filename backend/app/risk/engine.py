@@ -18,6 +18,9 @@ from backend.app.risk.rules import (
     POINTS_FRP_HIGH,
     POINTS_FRP_LOW,
     POINTS_FRP_MEDIUM,
+    POINTS_GAS_CONTRADICTION,
+    POINTS_GAS_SOLIDIFIED,
+    POINTS_GAS_SUPPORTED,
     POINTS_HIGH_CONFIDENCE,
     POINTS_INDUSTRIAL_CRITICAL,
     POINTS_INDUSTRIAL_WARNING,
@@ -179,6 +182,29 @@ class RiskEngine:
 
         return 0.0, []
 
+    def _evaluate_gas_signature(
+        self, f: Dict[str, Any]
+    ) -> Tuple[float, List[str]]:
+        """Adjust score based on Agent 2's SO2/NO2 verification, if present.
+        Absent/NO_DATA/INCONCLUSIVE status contributes nothing — this pillar
+        only fires when gas evidence actually agrees or disagrees with the
+        ML classification."""
+        agent2_status = f.get("agent2_status")
+
+        if agent2_status == "SOLIDIFIED":
+            return POINTS_GAS_SOLIDIFIED, [
+                "Gas signature (SO2/NO2) strongly confirms ML classification"
+            ]
+        if agent2_status == "SUPPORTED":
+            return POINTS_GAS_SUPPORTED, [
+                "Gas signature partially supports ML classification"
+            ]
+        if agent2_status == "CONTRADICTION":
+            return POINTS_GAS_CONTRADICTION, [
+                "Gas signature contradicts ML classification — flagged for manual review"
+            ]
+        return 0.0, []
+
     def evaluate(self, feature_vector: Dict[str, Any]) -> Dict[str, Any]:
         """
         Evaluate a feature vector dictionary and compute explainable risk metrics.
@@ -188,9 +214,10 @@ class RiskEngine:
         v_score, v_reasons = self._evaluate_human_vulnerability(feature_vector)
         s_score, s_reasons = self._evaluate_fuel_and_spread(feature_vector)
         m_score, m_reasons = self._evaluate_mitigation(feature_vector)
+        g_score, g_reasons = self._evaluate_gas_signature(feature_vector)
 
         # Raw combined score
-        raw_total = f_score + i_score + v_score + s_score + m_score
+        raw_total = f_score + i_score + v_score + s_score + m_score + g_score
         clamped_score = max(0.0, min(100.0, round(raw_total, 1)))
 
         # Risk Tier
@@ -202,7 +229,7 @@ class RiskEngine:
             level = "HIGH"
 
         # Consolidated reasons
-        all_reasons = f_reasons + i_reasons + v_reasons + s_reasons + m_reasons
+        all_reasons = f_reasons + i_reasons + v_reasons + s_reasons + m_reasons + g_reasons
         if not all_reasons:
             all_reasons = ["Baseline low-intensity event with no immediate nearby hazards."]
 
@@ -215,6 +242,7 @@ class RiskEngine:
                 "human_vulnerability": round(v_score, 1),
                 "fuel_and_spread": round(s_score, 1),
                 "mitigation_deduction": round(m_score, 1),
+                "gas_verification": round(g_score, 1),
             },
             "reasons": all_reasons,
         }

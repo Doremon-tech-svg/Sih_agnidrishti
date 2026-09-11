@@ -60,3 +60,14 @@ POINTS_ROAD_ADJACENT = 5.0
 # -------------------------------------------------------------
 WATER_BARRIER_DIST_M = 500.0
 POINTS_WATER_DEDUCTION = -10.0
+
+
+# -------------------------------------------------------------
+# Pillar 5: Gas Signature Verification (Agent 2 — SO2/NO2)
+# Adjustment only, not an independent max like the other pillars —
+# it moves the score up or down based on how well atmospheric gas
+# evidence agrees with the ML classification.
+# -------------------------------------------------------------
+POINTS_GAS_SOLIDIFIED = 15.0      # agent2_status == "SOLIDIFIED"
+POINTS_GAS_SUPPORTED = 8.0        # agent2_status == "SUPPORTED"
+POINTS_GAS_CONTRADICTION = -15.0  # agent2_status == "CONTRADICTION"
