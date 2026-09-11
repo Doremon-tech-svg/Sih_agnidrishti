@@ -31,8 +31,9 @@ const server = http.createServer(app);
 const io = initializeSocket(server);
 setSocketIO(io);
 
+const frontendUrl = process.env.FRONTEND_URL;
 app.use(cors({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: frontendUrl ? [frontendUrl, frontendUrl.replace(/\/$/, '')] : '*',
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));

@@ -3,7 +3,6 @@ import path from 'path';
 
 const files = [
     'backend/schema.sql',
-    'backend/migrations/001_osm_id_unique.sql',
     'backend/migrations/002_auth.sql',
     'backend/migrations/003_anomaly_cols.sql',
     'backend/migrations/004_notifications.sql',

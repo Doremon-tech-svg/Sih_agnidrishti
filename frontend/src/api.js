@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:4000/api';
+const BASE = import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? 'http://localhost:4000/api' : 'https://sih-agnidrishti-express.onrender.com/api');
 
 // ── Auth token helpers ─────────────────────────────────────────────────────
 export const getToken  = ()    => localStorage.getItem('ag_token');
