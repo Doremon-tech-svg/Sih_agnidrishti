@@ -18,7 +18,6 @@ import alerts from './routes/alerts.js';
 import ml from './routes/ml.js';
 import admin from './routes/admin.js';
 import auth from './routes/auth.js';
-import mlApp from './routes/mlApp.js';
 import notifications from './routes/notifications.js';
 
 import { errorHandler } from './middleware/errorHandler.js';
@@ -53,7 +52,6 @@ app.use('/api/notifications', notifications);
 
 // ML pipeline: SUPER_ADMIN, ADMIN or ANALYST only
 app.use('/api/ml', ml); // role check inside router
-app.use('/api/ml-app', mlApp); // role check inside router
 
 // Admin-only endpoints
 app.use('/api/admin', admin); // role check inside router

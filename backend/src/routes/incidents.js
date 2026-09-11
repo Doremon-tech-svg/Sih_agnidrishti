@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { pool } from '../db.js';
 import { dispatchAlert } from '../notify.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { predictWithModel } from '../mlBridge.js';
+import { predictHotspot } from '../services/mlService.js';
 
 const router = Router();
 
@@ -64,7 +64,7 @@ router.post('/evaluate', (req, res) => {
         reasons,
     };
 
-    predictWithModel(record)
+    predictHotspot(record)
         .then((prediction) => res.json({ ...response, ml_prediction: prediction }))
         .catch(() => res.json({ ...response, ml_prediction: null }));
 });
@@ -137,7 +137,7 @@ router.get('/:id/report', async (req, res, next) => {
         const zscore = parseFloat(data.frp_zscore || 0).toFixed(2);
         const conf = ((data.class_confidence || 0.5) * 100).toFixed(1);
         const fallback = `Automated analysis confirms a ${data.threat_priority} priority ${data.classification} event with ${conf}% confidence. The thermal signature shows a Fire Radiative Power of ${frp} MW, which presents an anomaly z-score of ${zscore} against historical baselines. Immediate attention is advised.`;
-        
+
         res.json({ report: fallback });
     } catch (err) { next(err); }
 });
