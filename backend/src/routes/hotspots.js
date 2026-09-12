@@ -21,10 +21,26 @@ router.get('/india-heatmap', async (req, res, next) => {
     try {
         console.log('[MOCK] Returning hardcoded india-heatmap because DB is unreachable');
         const mockCells = [];
+        const getLandCoords = () => {
+            const regions = [
+                { minLat: 21.0, maxLat: 28.0, minLon: 70.0, maxLon: 76.0 }, // Gujarat/Rajasthan
+                { minLat: 18.0, maxLat: 24.0, minLon: 75.0, maxLon: 82.0 }, // Central
+                { minLat: 25.0, maxLat: 31.0, minLon: 75.0, maxLon: 81.0 }, // North
+                { minLat: 18.0, maxLat: 25.0, minLon: 83.0, maxLon: 88.0 }, // East/Odisha
+                { minLat: 11.0, maxLat: 18.0, minLon: 75.0, maxLon: 80.0 }, // South
+            ];
+            const r = regions[Math.floor(Math.random() * regions.length)];
+            return {
+                lat: r.minLat + Math.random() * (r.maxLat - r.minLat),
+                lon: r.minLon + Math.random() * (r.maxLon - r.minLon)
+            };
+        };
+
         for (let i = 0; i < 50; i++) {
+            const coords = getLandCoords();
             mockCells.push({
-                lat_bin: 10.0 + Math.random() * 18.0,
-                lon_bin: 70.0 + Math.random() * 18.0,
+                lat_bin: coords.lat,
+                lon_bin: coords.lon,
                 count: Math.floor(1 + Math.random() * 20),
                 max_frp: 50 + Math.random() * 200,
                 avg_frp: 30 + Math.random() * 100,
@@ -47,11 +63,26 @@ router.get('/india-heatmap', async (req, res, next) => {
 router.get('/heatmap', async (req, res, next) => {
     try {
         console.log('[MOCK] Returning hardcoded heatmap because DB is unreachable');
-        const mockCells = [];
+        const getLandCoords = () => {
+            const regions = [
+                { minLat: 21.0, maxLat: 28.0, minLon: 70.0, maxLon: 76.0 }, // Gujarat/Rajasthan
+                { minLat: 18.0, maxLat: 24.0, minLon: 75.0, maxLon: 82.0 }, // Central
+                { minLat: 25.0, maxLat: 31.0, minLon: 75.0, maxLon: 81.0 }, // North
+                { minLat: 18.0, maxLat: 25.0, minLon: 83.0, maxLon: 88.0 }, // East/Odisha
+                { minLat: 11.0, maxLat: 18.0, minLon: 75.0, maxLon: 80.0 }, // South
+            ];
+            const r = regions[Math.floor(Math.random() * regions.length)];
+            return {
+                lat: r.minLat + Math.random() * (r.maxLat - r.minLat),
+                lon: r.minLon + Math.random() * (r.maxLon - r.minLon)
+            };
+        };
+
         for (let i = 0; i < 50; i++) {
+            const coords = getLandCoords();
             mockCells.push({
-                lat_bin: 10.0 + Math.random() * 18.0,
-                lon_bin: 70.0 + Math.random() * 18.0,
+                lat_bin: coords.lat,
+                lon_bin: coords.lon,
                 cnt: Math.floor(1 + Math.random() * 20)
             });
         }
@@ -66,12 +97,31 @@ router.get('/', async (req, res, next) => {
         const mockHotspots = [];
         const classes = ['Gas Flare', 'Industrial Thermal Source', 'Industrial Fire / Accident', 'Agricultural Burning', 'Wildfire / Forest Fire'];
         
+        const getLandCoords = () => {
+            const regions = [
+                { minLat: 21.0, maxLat: 28.0, minLon: 70.0, maxLon: 76.0 },
+                { minLat: 18.0, maxLat: 24.0, minLon: 75.0, maxLon: 82.0 },
+                { minLat: 25.0, maxLat: 31.0, minLon: 75.0, maxLon: 81.0 },
+                { minLat: 18.0, maxLat: 25.0, minLon: 83.0, maxLon: 88.0 },
+                { minLat: 11.0, maxLat: 18.0, minLon: 75.0, maxLon: 80.0 },
+            ];
+            const r = regions[Math.floor(Math.random() * regions.length)];
+            return {
+                lat: r.minLat + Math.random() * (r.maxLat - r.minLat),
+                lon: r.minLon + Math.random() * (r.maxLon - r.minLon)
+            };
+        };
+
         // Generate random hotspots in Gujarat and India
         for (let i = 0; i < 200; i++) {
             let lat, lon;
             if (i < 50) { lat = 22.85 + Math.random() * 0.3; lon = 72.45 + Math.random() * 0.3; } // Ahmedabad
             else if (i < 100) { lat = 21.05 + Math.random() * 0.15; lon = 72.55 + Math.random() * 0.15; } // Hazira
-            else { lat = 10.0 + Math.random() * 18.0; lon = 70.0 + Math.random() * 18.0; }
+            else { 
+                const coords = getLandCoords();
+                lat = coords.lat; 
+                lon = coords.lon; 
+            }
             
             mockHotspots.push({
                 id: i + 1000,

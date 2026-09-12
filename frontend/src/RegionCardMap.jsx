@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, CircleMarker, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getHotspots, getFacilities, getHotspotHeatmap } from './api.js';
+
+function RecenterComponent({ lat, lon, zoom }) {
+    const map = useMap();
+    useEffect(() => {
+        if (lat != null && lon != null) {
+            map.setView([lat, lon], zoom || 7, { animate: true });
+        }
+    }, [lat, lon, zoom, map]);
+    return null;
+}
 
 export default function RegionCardMap({ bbox, center, height = 220 }) {
     const [hotspots, setHotspots] = useState([]);
@@ -23,7 +33,8 @@ export default function RegionCardMap({ bbox, center, height = 220 }) {
 
     return (
         <div style={{ width: '100%', height, borderRadius: 8, overflow: 'hidden', marginTop: 10 }}>
-            <MapContainer center={view} zoom={6} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false} zoomControl={false}>
+            <MapContainer center={view} zoom={6} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true} zoomControl={true}>
+                <RecenterComponent lat={view[0]} lon={view[1]} zoom={6} />
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution="&copy; OpenStreetMap contributors"

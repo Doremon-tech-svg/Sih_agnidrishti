@@ -251,9 +251,9 @@ export default function MapView({ onHotspotCount, region }) {
                 zoomControl={true}
                 scrollWheelZoom={true}
             >
-                {region && <RecenterComponent 
-                    lat={(region.minLat + region.maxLat) / 2} 
-                    lon={(region.minLon + region.maxLon) / 2} 
+                {region && (region.bbox || region.coords) && <RecenterComponent 
+                    lat={region.bbox ? (region.bbox.minLat + region.bbox.maxLat) / 2 : region.coords.lat} 
+                    lon={region.bbox ? (region.bbox.minLon + region.bbox.maxLon) / 2 : region.coords.lng} 
                     zoom={9} 
                 />}
                 {/* Light OpenStreetMap Theme */}
