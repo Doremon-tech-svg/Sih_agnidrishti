@@ -1,5 +1,5 @@
-import { MapContainer, TileLayer, CircleMarker, Popup, GeoJSON } from 'react-leaflet';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Popup, GeoJSON, useMap } from 'react-leaflet';
+import { useEffect, useState, useCallback } from 'react';
 import { evaluateIncident, getHotspots, getFacilities } from './api.js';
 import FacilityPanel from './FacilityPanel.jsx';
 import Legend from './Legend.jsx';
@@ -131,7 +131,17 @@ function HotspotPopup({ h, evaluation, onEvaluate }) {
     );
 }
 
-export default function MapView({ onHotspotCount }) {
+function RecenterComponent({ lat, lon, zoom }) {
+    const map = useMap();
+    useEffect(() => {
+        if (lat != null && lon != null) {
+            map.setView([lat, lon], zoom || 7, { animate: true });
+        }
+    }, [lat, lon, zoom, map]);
+    return null;
+}
+
+export default function MapView({ onHotspotCount, region }) {
     const [hotspots, setHotspots] = useState([]);
     const [timeFiltered, setTimeFiltered] = useState([]);
     const [classFiltered, setClassFiltered] = useState([]);
@@ -237,20 +247,20 @@ export default function MapView({ onHotspotCount }) {
 
             <MapContainer
                 center={[22.3, 71.5]} zoom={7}
-                style={{ height: '100%', width: '100%', background: '#0f172a' }}
-                zoomControl={false}
+                style={{ height: '100%', width: '100%', background: '#e5e5e5' }}
+                zoomControl={true}
+                scrollWheelZoom={true}
             >
-                {/* Esri Dark Gray Canvas — free, no API key required */}
+                {region && <RecenterComponent 
+                    lat={(region.minLat + region.maxLat) / 2} 
+                    lon={(region.minLon + region.maxLon) / 2} 
+                    zoom={9} 
+                />}
+                {/* Light OpenStreetMap Theme */}
                 <TileLayer
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-                    attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ"
-                    maxZoom={16}
-                />
-                {/* Reference layer — adds city/road/border labels */}
-                <TileLayer
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
-                    maxZoom={16}
-                    pane="shadowPane"
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    maxZoom={19}
                 />
 
                 {facilities.map(f => {

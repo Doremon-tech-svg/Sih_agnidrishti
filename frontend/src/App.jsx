@@ -185,7 +185,7 @@ function LiveViewPage({ region, onBack, onHotspotCount }) {
 
             {/* Map fills remaining space */}
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-                <MapView onHotspotCount={onHotspotCount} />
+                <MapView onHotspotCount={onHotspotCount} region={region} />
             </div>
         </div>
     );
