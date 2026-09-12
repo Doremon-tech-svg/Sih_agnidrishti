@@ -4,14 +4,25 @@ function PixelatedWorldMap({ blipCount, hotspots = [] }) {
   const canvasRef = useRef(null);
   const [selectedPixel, setSelectedPixel] = useState(null);
   const [worldData, setWorldData] = useState(null);
+  const countriesDataRef = useRef(null);
   const pixelDataRef = useRef([]);
 
-  // Load world GeoJSON data
+  // Load world land GeoJSON (used to render the continents as pixels)
   useEffect(() => {
-    fetch('/assets/world_land.json')
-      .then(res => res.json())
-      .then(data => setWorldData(data))
-      .catch(err => console.error('Failed to load world data:', err));
+    fetch("/assets/world_land.json")
+      .then((res) => res.json())
+      .then((data) => setWorldData(data))
+      .catch((err) => console.error("Failed to load world data:", err));
+  }, []);
+
+  // Load world countries GeoJSON (used to resolve the region behind a click)
+  useEffect(() => {
+    fetch("/assets/world_countries.json")
+      .then((res) => res.json())
+      .then((data) => {
+        countriesDataRef.current = data;
+      })
+      .catch((err) => console.error("Failed to load country data:", err));
   }, []);
 
   useEffect(() => {
@@ -26,21 +37,41 @@ function PixelatedWorldMap({ blipCount, hotspots = [] }) {
     let height = 0;
     let t = 0;
 
-    const pixelSize = 10; // Bigger pixel blocks
-    
-    // Convert GeoJSON coordinates to canvas coordinates
+    const pixelSize = 10; // Pixel block size
+
+    // Lon/lat -> canvas pixel position (equirectangular projection)
     const mercatorProject = (lon, lat) => {
-      const x = ((lon + 180) / 360) * width;
-      const y = ((90 - lat) / 180) * height;
-      return { x, y };
+      return {
+        x: ((lon + 180) / 360) * width,
+        y: ((90 - lat) / 180) * height,
+      };
     };
 
-    // Fill polygon using scanline algorithm for solid continents
-    const fillPolygon = (coordinates, pixelGrid, pixelSize) => {
-      // Get bounding box
-      let minX = Infinity, maxX = -Infinity;
-      let minY = Infinity, maxY = -Infinity;
-      
+    // Ray-cast point-in-polygon test (used to fill continents + find regions)
+    const pointInRing = (points, testX, testY) => {
+      let inside = false;
+      for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+        const xi = points[i][0];
+        const yi = points[i][1];
+        const xj = points[j][0];
+        const yj = points[j][1];
+        if (
+          (yi > testY) !== (yj > testY) &&
+          testX < ((xj - xi) * (testY - yi)) / (yj - yi) + xi
+        ) {
+          inside = !inside;
+        }
+      }
+      return inside;
+    };
+
+    // Fill a polygon ring by stamping pixel blocks inside it
+    const fillPolygon = (coordinates, pixelGrid) => {
+      let minX = Infinity;
+      let maxX = -Infinity;
+      let minY = Infinity;
+      let maxY = -Infinity;
+
       coordinates.forEach(([lon, lat]) => {
         const { x, y } = mercatorProject(lon, lat);
         minX = Math.min(minX, x);
@@ -48,47 +79,41 @@ function PixelatedWorldMap({ blipCount, hotspots = [] }) {
         minY = Math.min(minY, y);
         maxY = Math.max(maxY, y);
       });
-      
-      // Snap to pixel grid
+
       minX = Math.floor(minX / pixelSize) * pixelSize;
       maxX = Math.ceil(maxX / pixelSize) * pixelSize;
       minY = Math.floor(minY / pixelSize) * pixelSize;
       maxY = Math.ceil(maxY / pixelSize) * pixelSize;
-      
-      // Fill pixels inside the polygon
+
       for (let py = minY; py <= maxY; py += pixelSize) {
         for (let px = minX; px <= maxX; px += pixelSize) {
-          // Ray casting to check if pixel is inside polygon
           const testX = px + pixelSize / 2;
           const testY = py + pixelSize / 2;
-          
-          let inside = false;
-          let j = coordinates.length - 1;
-          
-          for (let i = 0; i < coordinates.length; i++) {
-            const xi = ((coordinates[i][0] + 180) / 360) * width;
-            const yi = ((90 - coordinates[i][1]) / 180) * height;
-            const xj = ((coordinates[j][0] + 180) / 360) * width;
-            const yj = ((90 - coordinates[j][1]) / 180) * height;
-            
-            if (((yi > testY) !== (yj > testY)) &&
-                (testX < (xj - xi) * (testY - yi) / (yj - yi) + xi)) {
-              inside = !inside;
-            }
-            j = i;
-          }
-          
-          if (inside) {
-            const key = px + ',' + py;
+          const lon = (testX / width) * 360 - 180;
+          const lat = 90 - (testY / height) * 180;
+
+          // Convert ring to lon/lat canvas-space for the ray cast
+          const ring = coordinates.map(([lo, la]) => {
+            const p = mercatorProject(lo, la);
+            return [p.x, p.y];
+          });
+
+          if (pointInRing(ring, testX, testY)) {
+            const key = px + "," + py;
             if (!pixelGrid.has(key)) {
               pixelGrid.set(key, {
                 x: px,
                 y: py,
                 col: Math.floor(px / pixelSize),
                 row: Math.floor(py / pixelSize),
-                brightness: 0.6 + Math.random() * 0.4,
-                pulseOffset: Math.random() * Math.PI * 2,
-                pulseSpeed: 1 + Math.random() * 2,
+                lon,
+                lat,
+                // Slow, gentle per-pixel shimmer — every pixel vibrates
+                // independently in colour brightness without flickering
+                phase: Math.random() * Math.PI * 2,
+                freq: 0.6 + Math.random() * 0.9,
+                base: 0.55 + Math.random() * 0.35,
+                tint: Math.random() * 0.25, // slight colour variance
               });
             }
           }
@@ -98,26 +123,47 @@ function PixelatedWorldMap({ blipCount, hotspots = [] }) {
 
     const generatePixelatedMap = () => {
       const pixels = new Map();
-      
+
       if (worldData && worldData.features) {
-        worldData.features.forEach(feature => {
+        worldData.features.forEach((feature) => {
           const geometry = feature.geometry;
-          
-          if (geometry.type === 'Polygon') {
-            geometry.coordinates.forEach(ring => {
-              fillPolygon(ring, pixels, pixelSize);
-            });
-          } else if (geometry.type === 'MultiPolygon') {
-            geometry.coordinates.forEach(polygon => {
-              polygon.forEach(ring => {
-                fillPolygon(ring, pixels, pixelSize);
-              });
+          if (geometry.type === "Polygon") {
+            geometry.coordinates.forEach((ring) => fillPolygon(ring, pixels));
+          } else if (geometry.type === "MultiPolygon") {
+            geometry.coordinates.forEach((polygon) => {
+              polygon.forEach((ring) => fillPolygon(ring, pixels));
             });
           }
         });
       }
-      
+
       return Array.from(pixels.values());
+    };
+
+    // Resolve which country contains a lon/lat point
+    const findRegion = (lon, lat) => {
+      const data = countriesDataRef.current;
+      if (!data || !data.features) return "Terrestrial zone";
+
+      const ringHit = (geometry) => {
+        if (!geometry) return false;
+        if (geometry.type === "Polygon") {
+          return pointInRing(geometry.coordinates[0], lon, lat);
+        }
+        if (geometry.type === "MultiPolygon") {
+          return geometry.coordinates.some(
+            (polygon) => polygon[0] && pointInRing(polygon[0], lon, lat)
+          );
+        }
+        return false;
+      };
+
+      for (const feature of data.features) {
+        const name = feature.properties?.name;
+        if (!name) continue;
+        if (ringHit(feature.geometry)) return name;
+      }
+      return "Terrestrial zone";
     };
 
     const resize = () => {
@@ -129,25 +175,26 @@ function PixelatedWorldMap({ blipCount, hotspots = [] }) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       pixelDataRef.current = generatePixelatedMap();
     };
+
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
-    // Handle click on pixels
     const handleCanvasClick = (e) => {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      
-      const clickedPixel = pixelDataRef.current.find(p => 
-        x >= p.x && x < p.x + pixelSize && y >= p.y && y < p.y + pixelSize
+
+      const clickedPixel = pixelDataRef.current.find(
+        (p) => x >= p.x && x < p.x + pixelSize && y >= p.y && y < p.y + pixelSize
       );
-      
+
       if (clickedPixel) {
-        const activeHotspots = hotspots.slice(0, Math.min(20, hotspots.length));
+        const region = findRegion(clickedPixel.lon, clickedPixel.lat);
         let nearest = null;
         let minDist = Infinity;
-        
+
+        const activeHotspots = hotspots.slice(0, Math.min(20, hotspots.length));
         activeHotspots.forEach((hotspot) => {
           const hx = ((hotspot.lon + 180) / 360) * width;
           const hy = ((90 - hotspot.lat) / 180) * height;
@@ -157,76 +204,92 @@ function PixelatedWorldMap({ blipCount, hotspots = [] }) {
             nearest = hotspot;
           }
         });
-        
-        setSelectedPixel({ ...clickedPixel, hotspot: nearest });
+
+        setSelectedPixel({ ...clickedPixel, region, hotspot: nearest });
       } else {
         setSelectedPixel(null);
       }
     };
-    
-    canvas.addEventListener('click', handleCanvasClick);
+
+    canvas.addEventListener("click", handleCanvasClick);
 
     const draw = () => {
       t += 0.016;
       ctx.clearRect(0, 0, width, height);
 
-      // Draw ocean background with subtle gradient
-      const oceanGrad = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
-      oceanGrad.addColorStop(0, 'rgba(20, 50, 90, 0.25)');
-      oceanGrad.addColorStop(1, 'rgba(10, 25, 50, 0.35)');
+      // Ocean base — calm deep blue
+      const oceanGrad = ctx.createRadialGradient(
+        width / 2,
+        height / 2,
+        0,
+        width / 2,
+        height / 2,
+        width
+      );
+      oceanGrad.addColorStop(0, "rgba(22, 52, 94, 0.30)");
+      oceanGrad.addColorStop(1, "rgba(10, 26, 52, 0.38)");
       ctx.fillStyle = oceanGrad;
       ctx.fillRect(0, 0, width, height);
-      
-      // Draw pixelated world map with pulsating glow
+
+      // Pass 1 — stable continent base (avoids any flicker/glitch look)
       pixelDataRef.current.forEach((pixel) => {
-        const pulse = Math.sin(t * pixel.pulseSpeed + pixel.pulseOffset) * 0.5 + 0.5;
-        const brightness = pixel.brightness * (0.6 + pulse * 0.4);
-        
-        // Neon cyan glow with pulsating effect
-        ctx.shadowBlur = 12 + pulse * 8;
-        ctx.shadowColor = 'rgba(70, 217, 255, ' + (0.5 + pulse * 0.5) + ')';
-        
-        ctx.fillStyle = 'rgba(70, 217, 255, ' + (brightness * 0.8) + ')';
+        const glow = 0.55 + 0.22 * Math.sin(t * pixel.freq + pixel.phase);
+        const alpha = pixel.base * glow;
+        ctx.fillStyle = `rgba(70, 214, 255, ${alpha})`;
         ctx.fillRect(pixel.x, pixel.y, pixelSize - 1, pixelSize - 1);
-        
-        // Add highlight edge
-        ctx.fillStyle = 'rgba(200, 250, 255, ' + (pulse * 0.3) + ')';
-        ctx.fillRect(pixel.x, pixel.y, pixelSize - 1, 1);
-        ctx.fillRect(pixel.x, pixel.y, 1, pixelSize - 1);
       });
-      
-      ctx.shadowBlur = 0;
-      
-      // Moving scan line effect
-      const scanLine = (t * 60) % height;
-      const scanGrad = ctx.createLinearGradient(0, scanLine - 20, 0, scanLine + 20);
-      scanGrad.addColorStop(0, 'rgba(155, 124, 255, 0)');
-      scanGrad.addColorStop(0.5, 'rgba(155, 124, 255, 0.15)');
-      scanGrad.addColorStop(1, 'rgba(155, 124, 255, 0)');
-      ctx.fillStyle = scanGrad;
-      ctx.fillRect(0, scanLine - 20, width, 40);
-      
-      // Draw hotspot indicators with glowing effect
+
+      // Pass 2 — vibrating colour shimmer overlay ("glowing randomly")
+      ctx.globalCompositeOperation = "lighter";
+      pixelDataRef.current.forEach((pixel) => {
+        const wave = Math.sin(t * pixel.freq + pixel.phase); // -1..1
+        // Only the "active" half of the cycle adds a highlight, giving a
+        // smooth breathing/vibration instead of harsh on/off flicker
+        if (wave <= 0) return;
+        const intensity = wave * 0.35;
+        const hShift = pixel.tint;
+        ctx.fillStyle = `rgba(${Math.round(150 + hShift * 200)}, ${Math.round(
+          235 + hShift * 20
+        )}, 255, ${intensity})`;
+        ctx.fillRect(pixel.x, pixel.y, pixelSize - 1, pixelSize - 1);
+      });
+      ctx.globalCompositeOperation = "source-over";
+
+      // Soft drifting ambient glow (gentle, not a hard scanline)
+      const glowY = height * (0.5 + 0.35 * Math.sin(t * 0.25));
+      const ambient = ctx.createRadialGradient(
+        width * 0.5,
+        glowY,
+        0,
+        width * 0.5,
+        glowY,
+        width * 0.55
+      );
+      ambient.addColorStop(0, "rgba(110, 170, 255, 0.10)");
+      ambient.addColorStop(1, "rgba(110, 170, 255, 0)");
+      ctx.fillStyle = ambient;
+      ctx.fillRect(0, 0, width, height);
+
+      // Hotspot indicators — pulsing red markers
       const activeHotspots = hotspots.slice(0, Math.min(20, hotspots.length));
       activeHotspots.forEach((hotspot, idx) => {
         const x = ((hotspot.lon + 180) / 360) * width;
         const y = ((90 - hotspot.lat) / 180) * height;
-        const pulse = Math.sin(t * 5 + idx * 0.7) * 0.5 + 0.5;
-        
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = 'rgba(255, 80, 100, ' + pulse + ')';
-        ctx.strokeStyle = 'rgba(255, 80, 100, ' + (0.6 + pulse * 0.4) + ')';
+        const pulse = Math.sin(t * 4 + idx * 0.7) * 0.5 + 0.5;
+
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = `rgba(255, 90, 110, ${pulse})`;
+        ctx.strokeStyle = `rgba(255, 90, 110, ${0.5 + pulse * 0.4})`;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(x, y, 12 + pulse * 4, 0, Math.PI * 2);
+        ctx.arc(x, y, 11 + pulse * 4, 0, Math.PI * 2);
         ctx.stroke();
-        
-        ctx.fillStyle = 'rgba(255, 100, 120, ' + (0.9 + pulse * 0.1) + ')';
+
+        ctx.fillStyle = `rgba(255, 100, 120, ${0.85 + pulse * 0.15})`;
         ctx.beginPath();
         ctx.arc(x, y, 5 + pulse * 2, 0, Math.PI * 2);
         ctx.fill();
       });
-      
       ctx.shadowBlur = 0;
 
       raf = requestAnimationFrame(draw);
@@ -237,25 +300,38 @@ function PixelatedWorldMap({ blipCount, hotspots = [] }) {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
-      canvas.removeEventListener('click', handleCanvasClick);
+      canvas.removeEventListener("click", handleCanvasClick);
     };
   }, [blipCount, hotspots, worldData]);
 
   return (
     <>
-      <canvas ref={canvasRef} className="od-orbit-canvas" style={{ cursor: 'pointer' }} />
+      <canvas
+        ref={canvasRef}
+        className="od-orbit-canvas"
+        style={{ cursor: "pointer" }}
+      />
       {selectedPixel && (
         <div className="od-pixel-info">
           <div className="od-pixel-label">Selected Pixel</div>
-          <div className="od-pixel-coords">Grid: [{selectedPixel.col}, {selectedPixel.row}]</div>
+          <div className="od-pixel-region">
+            <span className="od-pixel-region-icon">⌖</span>
+            {selectedPixel.region || "—"}
+          </div>
+          <div className="od-pixel-coords">
+            Grid: [{selectedPixel.col}, {selectedPixel.row}] ·{" "}
+            {selectedPixel.lat?.toFixed(2)}°N, {selectedPixel.lon?.toFixed(2)}°E
+          </div>
           {selectedPixel.hotspot ? (
             <>
               <div className="od-pixel-hotspot">
-                <span className="od-hotspot-type">{selectedPixel.hotspot.classification || 'Thermal Anomaly'}</span>
+                <span className="od-hotspot-type">
+                  {selectedPixel.hotspot.classification || "Thermal Anomaly"}
+                </span>
               </div>
               <div className="od-pixel-data">
-                <div>FRP: {selectedPixel.hotspot.frp?.toFixed(1) || '—'} MW</div>
-                <div>Risk: {selectedPixel.hotspot.risk_score || '—'}</div>
+                <div>FRP: {selectedPixel.hotspot.frp?.toFixed(1) || "—"} MW</div>
+                <div>Risk: {selectedPixel.hotspot.risk_score || "—"}</div>
               </div>
             </>
           ) : (

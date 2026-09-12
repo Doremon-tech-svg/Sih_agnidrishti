@@ -166,6 +166,354 @@ function Gauge({ label, display, sub, pct, color = "#46d9ff" }) {
   );
 }
 
+/* ---------------------------- flip peak/avg FRP card ----------------------- */
+
+function FlipFRPCard({ peakFrp, avgFrp }) {
+  const [flipped, setFlipped] = useState(false);
+  return (
+    <div
+      className={`od-flip ${flipped ? "is-flipped" : ""}`}
+      onMouseEnter={() => setFlipped(true)}
+      onMouseLeave={() => setFlipped(false)}
+    >
+      <div className="od-flip-inner">
+        <div className="od-flip-face od-flip-front">
+          <span className="od-flip-badge">hover to flip</span>
+          <span className="od-flip-label">Peak FRP</span>
+          <strong className="od-flip-value">{peakFrp ? peakFrp.toFixed(1) : "—"}</strong>
+          <em className="od-flip-sub">MW · target</em>
+        </div>
+        <div className="od-flip-face od-flip-back">
+          <span className="od-flip-badge">hover to flip</span>
+          <span className="od-flip-label">Average FRP</span>
+          <strong className="od-flip-value">{avgFrp ? avgFrp.toFixed(1) : "—"}</strong>
+          <em className="od-flip-sub">MW · current</em>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------- organic glass blobs --------------------------- */
+
+function hexToRgb(hex) {
+  const h = String(hex || "").replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h.padEnd(6, "0");
+  const n = parseInt(full, 16);
+  return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+}
+
+function truncateLabel(text, max) {
+  const s = String(text || "");
+  return s.length > max ? `${s.slice(0, max - 1)}\u2026` : s;
+}
+
+function usePrefersReducedMotion() {
+  const [motion, setMotion] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = () => setMotion(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return motion;
+}
+
+function SignalBlobs({ data = [], colors = {}, total = 0 }) {
+  const stageRef = useRef(null);
+  const canvasRef = useRef(null);
+  const reducedMotion = usePrefersReducedMotion();
+
+  // Serialise only what drives the viz so identity changes don't restart the loop.
+  const dataKey = JSON.stringify(data.slice(0, 3).map((d) => [d.name, d.value]));
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const stage = stageRef.current;
+    if (!canvas || !stage) return undefined;
+    const ctx = canvas.getContext("2d");
+
+    const blobs = data.slice(0, 3).map((d) => ({
+      name: d.name,
+      value: d.value,
+      rgb: hexToRgb(colors[d.name] || "#4d8dff"),
+    }));
+    if (!blobs.length) return undefined;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let raf = 0;
+    let W = 0;
+    let H = 0;
+    let t = 0;
+    let mouse = { x: -9999, y: -9999, active: false };
+    let hoverIndex = -1;
+
+    // Composition: A top-left, B top-right, C bottom-centre.
+    const anchors = [
+      { x: 0.3, y: 0.34 },
+      { x: 0.72, y: 0.34 },
+      { x: 0.5, y: 0.68 },
+    ];
+    const maxVal = Math.max(...blobs.map((b) => b.value), 1);
+    const minR = 48;
+    const maxR = 78;
+
+    const state = blobs.map((b, i) => {
+      const ratio = b.value / maxVal;
+      return {
+        ...b,
+        r: minR + (maxR - minR) * (0.45 + 0.55 * ratio),
+        x: 0,
+        y: 0,
+        ang: Math.random() * Math.PI * 2,
+        ph1: Math.random() * Math.PI * 2,
+        ph2: Math.random() * Math.PI * 2,
+        ph3: Math.random() * Math.PI * 2,
+      };
+    });
+
+    const resize = () => {
+      const rect = stage.getBoundingClientRect();
+      W = rect.width;
+      H = rect.height;
+      canvas.width = Math.max(1, Math.floor(W * dpr));
+      canvas.height = Math.max(1, Math.floor(H * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      state.forEach((b, i) => {
+        const ax = anchors[i % anchors.length].x * W;
+        const ay = anchors[i % anchors.length].y * H;
+        b.x = Math.min(W - b.r, Math.max(b.r, ax));
+        b.y = Math.min(H - b.r, Math.max(b.r, ay));
+      });
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(stage);
+
+    const onMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse = { x: e.clientX - rect.left, y: e.clientY - rect.top, active: true };
+    };
+    const onLeave = () => {
+      mouse = { x: -9999, y: -9999, active: false };
+      hoverIndex = -1;
+    };
+    canvas.addEventListener("mousemove", onMove);
+    canvas.addEventListener("mouseleave", onLeave);
+
+    const draw = () => {
+      t += reducedMotion ? 0 : 0.016;
+      const n = reducedMotion ? 0 : 1; // ~1 unit per 60fps frame
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Deep glass-well backdrop so the orbs read as floating inside.
+      const bg = ctx.createRadialGradient(W / 2, H / 2, 10, W / 2, H / 2, Math.max(W, H) * 0.72);
+      bg.addColorStop(0, "rgba(24, 48, 78, 0.10)");
+      bg.addColorStop(0.62, "rgba(9, 16, 30, 0.3)");
+      bg.addColorStop(1, "rgba(4, 8, 16, 0.62)");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      /* ------------------------- organic wander + physics ------------------------ */
+      state.forEach((b, i) => {
+        const ax = anchors[i % anchors.length].x * W;
+        const ay = anchors[i % anchors.length].y * H;
+
+        // Slow, non-repeating drift for each blob.
+        const wobX =
+          Math.sin(t * 0.42 + b.ph1) * 24 +
+          Math.sin(t * 0.21 + b.ph3) * 17 +
+          Math.sin(t * 0.13 + b.ph2) * 10;
+        const wobY =
+          Math.cos(t * 0.34 + b.ph2) * 21 +
+          Math.sin(t * 0.19 + b.ph1 + b.ph3) * 15 +
+          Math.cos(t * 0.11 + b.ph3) * 9;
+
+        const tx = ax + wobX;
+        const ty = ay + wobY;
+        b.x += (tx - b.x) * 0.016 * n;
+        b.y += (ty - b.y) * 0.016 * n;
+
+        // Gentle repulsion near cursor, faint attraction when far away.
+        if (mouse.active && !reducedMotion) {
+          const mdx = b.x - mouse.x;
+          const mdy = b.y - mouse.y;
+          const md = Math.hypot(mdx, mdy) || 1;
+          const reach = b.r + 150;
+          if (md < reach) {
+            const f = (1 - md / reach) * 1.1 * n;
+            b.x += (mdx / md) * f * 7;
+            b.y += (mdy / md) * f * 7;
+          } else if (md > reach * 3.4) {
+            b.x += (mdx / md) * 0.14 * n;
+            b.y += (mdy / md) * 0.14 * n;
+          }
+        }
+
+        // Keep the blob fully inside the glass container.
+        const pad = b.r + 3;
+        if (b.x < pad) b.x = pad;
+        if (b.x > W - pad) b.x = W - pad;
+        if (b.y < pad) b.y = pad;
+        if (b.y > H - pad) b.y = H - pad;
+      });
+
+      // Soft separation so approaching orbs never become confusing.
+      for (let i = 0; i < state.length; i++) {
+        for (let j = i + 1; j < state.length; j++) {
+          const a = state[i];
+          const b = state[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const d = Math.hypot(dx, dy) || 1;
+          const minDist = (a.r + b.r) * 0.98;
+          if (d < minDist) {
+            const push = (minDist - d) * 0.16 * n;
+            const nx = dx / d;
+            const ny = dy / d;
+            a.x -= nx * push;
+            a.y -= ny * push;
+            b.x += nx * push;
+            b.y += ny * push;
+          }
+        }
+      }
+
+      // Hover detection.
+      hoverIndex = -1;
+      state.forEach((b, i) => {
+        if (!mouse.active) return;
+        const d = Math.hypot(mouse.x - b.x, mouse.y - b.y);
+        if (d < b.r * 1.25) hoverIndex = i;
+      });
+
+      /* -------- merged soft glow pass: gives a liquid "metaball" union --------- */
+      ctx.globalCompositeOperation = "lighter";
+      state.forEach((b, i) => {
+        const active = hoverIndex === i;
+        const g = ctx.createRadialGradient(b.x, b.y, b.r * 0.1, b.x, b.y, b.r * 1.85);
+        g.addColorStop(0, `rgba(${b.rgb}, ${active ? 0.16 : 0.1})`);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r * 1.85, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalCompositeOperation = "source-over";
+
+      /* ------------------------------ glass orbs ------------------------------- */
+      state.forEach((b, i) => {
+        const hovered = hoverIndex === i;
+        const scale = hovered ? 1.07 : 1;
+        const R = b.r * scale;
+        b.ang += 0.0012 * n;
+
+        const deformA = 1 + 0.05 * Math.sin(t * 0.82 + b.ph2) * (hovered ? 0.3 : 1);
+        const deformB = 1 + 0.05 * Math.cos(t * 0.67 + b.ph1 + b.ph3) * (hovered ? 0.3 : 1);
+
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(Math.sin(b.ang) * 0.06);
+
+        // Frosted translucent body — background stays visible through it.
+        const core = ctx.createRadialGradient(-R * 0.32, -R * 0.34, R * 0.08, 0, 0, R);
+        core.addColorStop(0, "rgba(255,255,255,0.85)");
+        core.addColorStop(0.12, `rgba(${b.rgb}, ${hovered ? 0.56 : 0.46})`);
+        core.addColorStop(0.48, `rgba(${b.rgb}, 0.16)`);
+        core.addColorStop(0.82, `rgba(${b.rgb}, 0.055)`);
+        core.addColorStop(1, "rgba(255,255,255,0.02)");
+
+        ctx.beginPath();
+        ctx.ellipse(0, 0, R * deformA, R * deformB, 0, 0, Math.PI * 2);
+        ctx.fillStyle = core;
+        ctx.fill();
+
+        // Thin glass rim.
+        ctx.strokeStyle = `rgba(${b.rgb}, ${hovered ? 0.75 : 0.38})`;
+        ctx.lineWidth = hovered ? 2 : 1;
+        ctx.stroke();
+
+        // Glossy catch-light (like light refracting through glass).
+        const hi = ctx.createRadialGradient(
+          -R * 0.3,
+          -R * 0.36,
+          R * 0.02,
+          -R * 0.3,
+          -R * 0.36,
+          R * 0.42
+        );
+        hi.addColorStop(0, "rgba(255,255,255,0.9)");
+        hi.addColorStop(0.35, "rgba(255,255,255,0.14)");
+        hi.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.beginPath();
+        ctx.ellipse(0, 0, R * deformA, R * deformB, 0, 0, Math.PI * 2);
+        ctx.fillStyle = hi;
+        ctx.fill();
+
+        // Number = primary element, label = secondary, both centred.
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = `800 ${Math.min(27, R * 0.44)}px Inter, system-ui, sans-serif`;
+        ctx.shadowColor = `rgba(${b.rgb}, ${hovered ? 1 : 0.72})`;
+        ctx.shadowBlur = hovered ? 22 : 13;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(b.value.toLocaleString(), 0, -4);
+        ctx.shadowBlur = 0;
+        ctx.font = `700 ${Math.min(10, R * 0.165)}px Inter, system-ui, sans-serif`;
+        ctx.fillStyle = "rgba(222, 238, 250, 0.94)";
+        ctx.fillText(truncateLabel(b.name, 20), 0, 19);
+
+        ctx.restore();
+      });
+
+      if (!reducedMotion) raf = requestAnimationFrame(draw);
+    };
+
+    if (reducedMotion) {
+      // Single static frame for users who prefer reduced motion.
+      resize();
+      t = 0;
+      state.forEach((b, i) => {
+        b.x = anchors[i % anchors.length].x * W;
+        b.y = anchors[i % anchors.length].y * H;
+      });
+      draw();
+    } else {
+      raf = requestAnimationFrame(draw);
+    }
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      canvas.removeEventListener("mousemove", onMove);
+      canvas.removeEventListener("mouseleave", onLeave);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataKey, reducedMotion]);
+
+  if (!data.length) {
+    return <EmptyState message="Run analysis to classify current detections." />;
+  }
+
+  return (
+    <section className="od-mb-card">
+      <header className="od-mb-head">
+        <div>
+          <h3>Classification Overview</h3>
+          <span>Distribution across detected classes</span>
+        </div>
+        {total > 0 && <strong className="od-mb-total">{total.toLocaleString()} total</strong>}
+      </header>
+      <div className="od-mb-stage" ref={stageRef}>
+        <canvas ref={canvasRef} />
+        <span className="od-mb-hint">live · hover a blob to inspect</span>
+      </div>
+    </section>
+  );
+}
+
 /* ------------------------------ orbit hero canvas --------------------------- */
 
 function OrbitCanvas({ blipCount }) {
@@ -513,7 +861,6 @@ export default function Dashboard({ mlStatus, onRunML, showNavbar = true, onGoLa
   return (
     <main className="od-dashboard">
       <div className="od-stars" aria-hidden="true" />
-
       {showNavbar && (
         <header className="explorer-header od-dashboard-navbar" role="banner">
           <div className="header-left">
@@ -562,52 +909,10 @@ export default function Dashboard({ mlStatus, onRunML, showNavbar = true, onGoLa
       )}
 
       <div className="od-layout">
-        {/* ------------------------------- left rail ------------------------------ */}
-        <aside className="od-rail">
+        {/* --------------------------- left: pixelated map ------------------------ */}
+        <section className="od-stage od-stage-map">
           <Reveal>
-            <Panel title="Detection load" note="Live feed">
-              <div className="od-meter-stack">
-                {meters.map((m) => (
-                  <MeterRow key={m.label} {...m} />
-                ))}
-              </div>
-            </Panel>
-          </Reveal>
-          <Reveal delay={70}>
-            <Panel title="Ground stations" note={`${facilities.length} sites`}>
-              {stationRows.length === 0 ? (
-                <EmptyState message="No facilities on record." />
-              ) : (
-                <div className="od-station-list">
-                  {stationRows.map((row, index) => (
-                    <div className="od-station-row" key={index}>
-                      <div className="od-station-top">
-                        <span className={`od-station-dot ${row.warn ? "is-warn" : ""}`} />
-                        <span className="od-station-name" title={row.name}>
-                          {row.name}
-                        </span>
-                        <strong>{row.load}</strong>
-                      </div>
-                      <div className="od-station-track">
-                        <span
-                          style={{
-                            width: `${row.load}%`,
-                            background: row.warn ? "#ffc857" : "#46d9ff",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Panel>
-          </Reveal>
-        </aside>
-
-        {/* ------------------------------- center stage ---------------------------- */}
-        <section className="od-stage">
-          <Reveal>
-            <div className="od-hero">
+            <div className="od-hero od-hero-map">
               <PixelatedWorldMap blipCount={classified.length} hotspots={classified} />
               <div className="od-hero-overlay">
                 <div className="od-mission">
@@ -617,122 +922,214 @@ export default function Dashboard({ mlStatus, onRunML, showNavbar = true, onGoLa
                   </div>
                   <div className="od-mission-sub">Monitored network · NEO constellation</div>
                 </div>
-                <div className="od-gauges">
-                  <Gauge
-                    label="Average FRP"
-                    display={avgFrp ? `${avgFrp.toFixed(1)}` : "—"}
-                    sub="MW · current"
-                    pct={peakFrp ? avgFrp / peakFrp : 0}
-                    color="#46d9ff"
-                  />
-                  <Gauge
-                    label="Peak FRP"
-                    display={peakFrp ? `${peakFrp.toFixed(1)}` : "—"}
-                    sub="MW · target"
-                    pct={peakFrp ? peakFrp / Math.max(peakFrp, 1) : 0}
-                    color="#ff647c"
-                  />
-                </div>
-                <div className="od-chips">
-                  <div className="od-chip">
-                    <span className="od-chip-icon">◉</span>
-                    <div>
-                      <em>Hotspots tracked</em>
-                      <strong>{classified.length.toLocaleString()} satellites</strong>
-                    </div>
-                  </div>
-                  <div className="od-chip">
-                    <span className="od-chip-icon is-alert">⚠</span>
-                    <div>
-                      <em>Latest alert</em>
-                      <strong>{alertAgo}</strong>
-                    </div>
-                  </div>
-                  <div className="od-chip">
-                    <span className="od-chip-icon is-cyan">⟳</span>
-                    <div>
-                      <em>Next sweep</em>
-                      <strong>T-{sweepLabel}</strong>
-                    </div>
-                  </div>
-                  <div className="od-chip">
-                    <span className={`od-chip-icon ${pipelineBusy ? "is-busy" : "is-green"}`}>⬡</span>
-                    <div>
-                      <em>Pipeline</em>
-                      <strong>{pipelineBusy ? "Processing" : mlStatus?.status || "Standby"}</strong>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </Reveal>
+        </section>
 
-          <Reveal delay={60}>
-            <div className="od-section-head">
-              <span>01 / Signal profile</span>
-              <h2>What the network is seeing</h2>
-            </div>
-            <div className="od-duo">
-              <Panel title="Classification" note="validated signals">
-                {pieData.length ? (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={58}
-                        outerRadius={88}
-                        paddingAngle={3}
-                        dataKey="value"
-                        stroke="rgba(5, 11, 20, 0.6)"
-                        strokeWidth={1}
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell key={index} fill={CLASS_COLORS[entry.name] || "#5b7086"} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<ChartTooltip />} />
-                      <ReLegend
-                        formatter={(value) => (
-                          <span className="od-legend-text">{value}</span>
-                        )}
-                        iconSize={7}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <EmptyState message="Run analysis to classify current detections." />
-                )}
-              </Panel>
-              <Panel title="Risk distribution" note="score bands">
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={riskBarData} barSize={36}>
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 10, fill: "#7890a7" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 9, fill: "#7890a7" }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={26}
-                    />
-                    <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(70, 217, 255, 0.05)" }} />
-                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                      {riskBarData.map((entry, index) => (
-                        <Cell key={index} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </Panel>
-            </div>
+        {/* ------------------ right rail: FRP flip + live status ------------------ */}
+        <aside className="od-rail od-rail-status">
+          <Reveal delay={40}>
+            <FlipFRPCard peakFrp={peakFrp} avgFrp={avgFrp} />
           </Reveal>
 
-          <Reveal delay={90}>
+          <Reveal delay={70}>
+            <Panel title="Hotspots tracked" note="live feed">
+              <div className="od-status-card">
+                <span className="od-status-icon od-status-cyan">◉</span>
+                <div className="od-status-main">
+                  <strong>{classified.length.toLocaleString()}</strong>
+                  <em>thermal detections classified</em>
+                </div>
+                <div className="od-status-foot">
+                  <span>Critical · {critical.length}</span>
+                  <span>Suppressed · {falsePositives.length}</span>
+                </div>
+              </div>
+            </Panel>
+          </Reveal>
+
+          <Reveal delay={100}>
+            <Panel title="Next sweep" note="pipeline">
+              <div className="od-status-card od-status-sweep">
+                <span className={`od-status-icon ${pipelineBusy ? "od-status-violet" : "od-status-green"}`}>⟳</span>
+                <div className="od-status-main">
+                  <strong>T-{sweepLabel}</strong>
+                  <em>{pipelineBusy ? "Pipeline processing" : mlStatus?.status || "Standby"}</em>
+                </div>
+              </div>
+            </Panel>
+          </Reveal>
+        </aside>
+      </div>
+
+      {/* ------------------------------ bottom stat row --------------------------- */}
+      <div className="od-bottom">
+        <Reveal delay={50}>
+          <Panel title="Detection load" note="Live feed">
+            <div className="od-meter-stack">
+              {meters.map((m) => (
+                <MeterRow key={m.label} {...m} />
+              ))}
+            </div>
+          </Panel>
+        </Reveal>
+        <Reveal delay={80}>
+          <Panel title="Ground stations" note={`${facilities.length} sites`}>
+            {stationRows.length === 0 ? (
+              <EmptyState message="No facilities on record." />
+            ) : (
+              <div className="od-station-list">
+                {stationRows.map((row, index) => (
+                  <div className="od-station-row" key={index}>
+                    <div className="od-station-top">
+                      <span className={`od-station-dot ${row.warn ? "is-warn" : ""}`} />
+                      <span className="od-station-name" title={row.name}>
+                        {row.name}
+                      </span>
+                      <strong>{row.load}</strong>
+                    </div>
+                    <div className="od-station-track">
+                      <span
+                        style={{
+                          width: `${row.load}%`,
+                          background: row.warn ? "#ffc857" : "#46d9ff",
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+        </Reveal>
+        <Reveal delay={110}>
+          <Panel title="Incident traffic" note="14 day">
+            {trendData.length > 1 ? (
+              <ResponsiveContainer width="100%" height={190}>
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="odIncidentFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#46d9ff" stopOpacity={0.32} />
+                      <stop offset="100%" stopColor="#46d9ff" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(117, 190, 231, 0.08)" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 8.5, fill: "#7890a7" }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval={1}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 8.5, fill: "#7890a7" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={24}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    name="Detections"
+                    stroke="#46d9ff"
+                    strokeWidth={2}
+                    fill="url(#odIncidentFill)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <EmptyState message="Not enough data for a trend view." />
+            )}
+          </Panel>
+        </Reveal>
+        <Reveal delay={140}>
+          <Panel title="Signal flow" note="avg FRP">
+            {trendData.length > 1 ? (
+              <ResponsiveContainer width="100%" height={170}>
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(117, 190, 231, 0.08)" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 8.5, fill: "#7890a7" }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval={1}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 8.5, fill: "#7890a7" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={28}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Line
+                    type="monotone"
+                    dataKey="avgFrp"
+                    name="Avg FRP"
+                    stroke="#9b7cff"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 3, fill: "#9b7cff" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <EmptyState message="Not enough data for a signal view." />
+            )}
+          </Panel>
+        </Reveal>
+      </div>
+
+      {/* ------------------------------ analysis section --------------------------- */}
+      <section className="od-analysis">
+        <Reveal delay={30}>
+          <div className="od-signal-head">
+            <div className="od-signal-kicker">
+              <span className="od-signal-num">01</span>
+              <span className="od-signal-kicker-text">Thermal signal profile</span>
+            </div>
+            <h2 className="od-signal-title">
+              What the signal <em>sees</em>
+            </h2>
+            <p className="od-signal-sub">
+              Classified detections by type · hover a bubble to inspect its live count
+            </p>
+          </div>
+        </Reveal>
+        <Reveal delay={60}>
+          <div className="od-duo">
+            <SignalBlobs data={pieData} colors={CLASS_COLORS} total={classified.length} />
+            <Panel title="Risk distribution" note="score bands">
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={riskBarData} barSize={36}>
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fill: "#7890a7" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 9, fill: "#7890a7" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={26}
+                  />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(70, 217, 255, 0.05)" }} />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    {riskBarData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </Panel>
+          </div>
+        </Reveal>
+
+        <Reveal delay={90}>
+          <div className="od-duo">
             <Panel title="Response log" note="latest escalations">
               {alerts.length === 0 ? (
                 <EmptyState message="No alerts have been recorded." />
@@ -765,89 +1162,6 @@ export default function Dashboard({ mlStatus, onRunML, showNavbar = true, onGoLa
                 </div>
               )}
             </Panel>
-          </Reveal>
-        </section>
-
-        {/* ------------------------------- right rail ------------------------------ */}
-        <aside className="od-rail">
-          <Reveal delay={40}>
-            <Panel title="Incident traffic" note="14 day">
-              {trendData.length > 1 ? (
-                <ResponsiveContainer width="100%" height={190}>
-                  <AreaChart data={trendData}>
-                    <defs>
-                      <linearGradient id="odIncidentFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#46d9ff" stopOpacity={0.32} />
-                        <stop offset="100%" stopColor="#46d9ff" stopOpacity={0.02} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(117, 190, 231, 0.08)" vertical={false} />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 8.5, fill: "#7890a7" }}
-                      axisLine={false}
-                      tickLine={false}
-                      interval={1}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 8.5, fill: "#7890a7" }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={24}
-                    />
-                    <Tooltip content={<ChartTooltip />} />
-                    <Area
-                      type="monotone"
-                      dataKey="count"
-                      name="Detections"
-                      stroke="#46d9ff"
-                      strokeWidth={2}
-                      fill="url(#odIncidentFill)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <EmptyState message="Not enough data for a trend view." />
-              )}
-            </Panel>
-          </Reveal>
-          <Reveal delay={80}>
-            <Panel title="Signal flow" note="avg FRP">
-              {trendData.length > 1 ? (
-                <ResponsiveContainer width="100%" height={170}>
-                  <LineChart data={trendData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(117, 190, 231, 0.08)" vertical={false} />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 8.5, fill: "#7890a7" }}
-                      axisLine={false}
-                      tickLine={false}
-                      interval={1}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 8.5, fill: "#7890a7" }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={28}
-                    />
-                    <Tooltip content={<ChartTooltip />} />
-                    <Line
-                      type="monotone"
-                      dataKey="avgFrp"
-                      name="Avg FRP"
-                      stroke="#9b7cff"
-                      strokeWidth={2}
-                      dot={false}
-                      activeDot={{ r: 3, fill: "#9b7cff" }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <EmptyState message="Not enough data for a signal view." />
-              )}
-            </Panel>
-          </Reveal>
-          <Reveal delay={120}>
             <Panel title="Escalation status" note="tiers">
               <div className="od-tiers">
                 {TIER_META.map(({ tier, label, color }) => {
@@ -888,9 +1202,9 @@ export default function Dashboard({ mlStatus, onRunML, showNavbar = true, onGoLa
                 </div>
               )}
             </Panel>
-          </Reveal>
-        </aside>
-      </div>
+          </div>
+        </Reveal>
+      </section>
     </main>
   );
 }
